@@ -1,0 +1,10 @@
+.DS_Store
+
+# Supabase local dev (Docker不使用のため除外)
+supabase/.branches
+supabase/.temp
+
+# env files
+.env
+.env.local
+.env.*.local
