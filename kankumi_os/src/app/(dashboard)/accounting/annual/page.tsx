@@ -62,7 +62,7 @@ export default async function AnnualPage() {
         </Link>
         <h1 className="text-2xl font-bold text-gray-800 mt-2">年間収支照合</h1>
         <p className="text-sm text-gray-500 mt-1">
-          会計年度ごとの Unit別入金期待値と実績を比較。単月差異も年間累計が一致すれば確定に変換します。
+          会計年度ごとの 部屋別入金期待値と実績を比較。単月差異も年間累計が一致すれば確定に変換します。
         </p>
       </div>
 

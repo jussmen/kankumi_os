@@ -70,7 +70,7 @@ export default async function SettingsPage() {
         <h2 className="text-lg font-semibold text-gray-800 mb-4">データエクスポート</h2>
         <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-100">
           <ExportRow
-            title="Unit台帳"
+            title="住民台帳"
             description="部屋番号・階数・専有面積・ステータスの一覧"
             href="/api/export/units"
             filename="units.csv"

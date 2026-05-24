@@ -86,7 +86,7 @@ export default async function UnitsPage({ searchParams }: PageProps) {
     <div className="px-6 py-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Unit台帳</h1>
+          <h1 className="text-2xl font-bold text-gray-800">住民台帳</h1>
           <p className="text-sm text-gray-500 mt-0.5">全{count ?? 0}戸</p>
         </div>
         {canEdit && (
@@ -109,13 +109,13 @@ export default async function UnitsPage({ searchParams }: PageProps) {
 
       {imported && (
         <div className="mb-4 rounded-md bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
-          {imported}件のUnit台帳をインポートしました。
+          {imported}件の住民台帳をインポートしました。
         </div>
       )}
 
       {(units ?? []).length === 0 ? (
         <div className="rounded-lg border border-dashed border-gray-300 py-16 text-center">
-          <p className="text-gray-500 text-sm mb-4">Unit台帳がまだ登録されていません。</p>
+          <p className="text-gray-500 text-sm mb-4">住民台帳がまだ登録されていません。</p>
           {canEdit && (
             <div className="flex justify-center gap-3">
               <Link href="/units/import" className="text-sm text-blue-600 hover:underline">

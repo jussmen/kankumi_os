@@ -20,7 +20,7 @@ const NAV_ITEMS: NavItem[] = [
     roles: ['admin', 'vice_president', 'treasurer', 'board_member', 'auditor', 'resident'],
   },
   {
-    label: '住民・Unit台帳',
+    label: '住民台帳',
     href: '/units',
     roles: ['admin', 'vice_president', 'treasurer', 'board_member', 'resident'],
   },

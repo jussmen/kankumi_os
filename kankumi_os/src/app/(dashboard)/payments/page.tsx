@@ -143,7 +143,7 @@ export default async function PaymentsPage() {
             {(units ?? []).length === 0 ? (
               <tr>
                 <td colSpan={months.length + 2} className="px-4 py-12 text-center text-gray-400">
-                  Unit情報がありません
+                  住民情報がありません
                 </td>
               </tr>
             ) : (
