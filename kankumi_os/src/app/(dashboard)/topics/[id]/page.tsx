@@ -3,6 +3,7 @@ import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import { createClient } from '@/lib/supabase/server'
 import { updateTopic, updateTopicStatus, togglePin } from '@/app/actions/topics'
+import { updateTaskStatus } from '@/app/actions/tasks'
 import { TopicForm } from '@/components/topics/topic-form'
 import { CommentThread } from '@/components/topics/comment-thread'
 import type { Database } from '@/types/database'
@@ -69,6 +70,13 @@ export default async function TopicDetailPage({ params, searchParams }: PageProp
     .single()
 
   if (!topic) notFound()
+
+  const { data: tasks } = await supabase
+    .from('tasks')
+    .select('id, title, status, due_date')
+    .eq('topic_id', id)
+    .eq('organization_id', orgId)
+    .order('created_at', { ascending: true })
 
   // コメント＋著者のメールアドレスを取得
   const { data: rawComments } = await supabase
@@ -209,6 +217,73 @@ export default async function TopicDetailPage({ params, searchParams }: PageProp
               </div>
             </div>
           )}
+
+          {/* タスク */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-gray-700">アクションアイテム</h2>
+              <Link
+                href={`/tasks/new?topic_id=${id}`}
+                className="text-xs text-blue-600 hover:underline"
+              >
+                + タスク追加
+              </Link>
+            </div>
+            {(tasks ?? []).length === 0 ? (
+              <p className="text-sm text-gray-400">タスクはまだありません。</p>
+            ) : (
+              <ul className="space-y-1">
+                {(tasks ?? []).map((task) => {
+                  const today = new Date().toISOString().split('T')[0]
+                  const isOverdue = task.status !== 'done' && task.due_date && task.due_date < today
+                  const statusBadge =
+                    task.status === 'done'
+                      ? 'bg-green-100 text-green-700'
+                      : task.status === 'in_progress'
+                      ? 'bg-yellow-100 text-yellow-700'
+                      : 'bg-gray-100 text-gray-600'
+                  const statusLabel =
+                    task.status === 'done' ? '完了' : task.status === 'in_progress' ? '進行中' : '未着手'
+
+                  return (
+                    <li
+                      key={task.id}
+                      className={`flex items-center gap-3 rounded-md px-3 py-2 ${isOverdue ? 'bg-red-50' : 'hover:bg-gray-50'}`}
+                    >
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0 ${statusBadge}`}
+                      >
+                        {statusLabel}
+                      </span>
+                      <Link
+                        href={`/tasks/${task.id}`}
+                        className="flex-1 text-sm text-gray-800 hover:text-blue-600 truncate"
+                      >
+                        {task.title}
+                      </Link>
+                      {task.due_date && (
+                        <span
+                          className={`text-xs shrink-0 ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-400'}`}
+                        >
+                          {task.due_date}
+                        </span>
+                      )}
+                      {task.status !== 'done' && (
+                        <form action={updateTaskStatus.bind(null, task.id, 'done')}>
+                          <button
+                            type="submit"
+                            className="text-xs text-gray-400 hover:text-green-600 transition-colors shrink-0"
+                          >
+                            完了
+                          </button>
+                        </form>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </div>
 
           {/* コメント */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
