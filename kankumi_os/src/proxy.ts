@@ -16,8 +16,13 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // /dashboard/** への未認証アクセスを /login にリダイレクト
-  if (request.nextUrl.pathname.startsWith('/dashboard') && !user) {
+  const { pathname } = request.nextUrl
+
+  // 認証が必要なルートへの未認証アクセスを /login にリダイレクト
+  if (
+    (pathname.startsWith('/dashboard') || pathname.startsWith('/onboarding')) &&
+    !user
+  ) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
