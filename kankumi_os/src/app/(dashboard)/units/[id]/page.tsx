@@ -2,8 +2,10 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { updateUnit } from '@/app/actions/units'
+import { adminSetPaymentProfile } from '@/app/actions/payment-profiles'
 import { UnitForm } from '@/components/units/unit-form'
 import { UnitChargesForm } from '@/components/units/unit-charges-form'
+import { PaymentProfileForm } from '@/components/payment-profiles/payment-profile-form'
 import type { Database } from '@/types/database'
 
 type OccupancyStatus = Database['public']['Enums']['occupancy_status']
@@ -196,7 +198,7 @@ export default async function UnitDetailPage({ params, searchParams }: PageProps
       </section>
 
       {/* DataReadiness */}
-      <section className="bg-white rounded-lg border border-gray-200 p-6">
+      <section className="bg-white rounded-lg border border-gray-200 p-6 mb-4">
         <h2 className="text-base font-semibold text-gray-800 mb-4">振込情報（データ整備状況）</h2>
         <div className="space-y-4 text-sm">
           <ProfileRow
@@ -209,6 +211,16 @@ export default async function UnitDetailPage({ params, searchParams }: PageProps
           />
         </div>
       </section>
+
+      {canEdit && (
+        <section className="bg-white rounded-lg border border-gray-200 p-6">
+          <h2 className="text-base font-semibold text-gray-800 mb-4">振込情報を設定（管理者）</h2>
+          <PaymentProfileForm
+            action={adminSetPaymentProfile.bind(null, id)}
+            submitLabel="設定する"
+          />
+        </section>
+      )}
     </div>
   )
 }
