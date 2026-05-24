@@ -3,9 +3,20 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { sendEmail } from '@/lib/email'
+import { announcementEmail } from '@/lib/email/templates'
 import type { Database } from '@/types/database'
 
 type Visibility = Database['public']['Enums']['visibility']
+
+const BOARD_ROLES: Database['public']['Enums']['member_role'][] = [
+  'admin',
+  'vice_president',
+  'treasurer',
+  'board_member',
+  'auditor',
+]
 
 async function getContext() {
   const supabase = await createClient()
@@ -98,6 +109,65 @@ export async function publishAnnouncement(id: string): Promise<void> {
     .eq('organization_id', orgId)
   revalidatePath('/announcements')
   revalidatePath(`/announcements/${id}`)
+
+  // メール送信（失敗してもユーザー操作をブロックしない）
+  try {
+    // お知らせの詳細と組合名を取得
+    const [annResult, orgResult] = await Promise.all([
+      supabase
+        .from('announcements')
+        .select('title, body, visibility')
+        .eq('id', id)
+        .single(),
+      supabase
+        .from('organizations')
+        .select('name')
+        .eq('id', orgId)
+        .single(),
+    ])
+
+    if (annResult.error || orgResult.error || !annResult.data || !orgResult.data) return
+
+    const { title, body, visibility } = annResult.data
+    const orgName = orgResult.data.name
+
+    // 送信対象メンバーを取得
+    let membersQuery = supabase
+      .from('organization_members')
+      .select('user_id, role')
+      .eq('organization_id', orgId)
+      .eq('is_active', true)
+
+    const { data: members, error: membersError } = await membersQuery
+    if (membersError || !members || members.length === 0) return
+
+    const targetUserIds =
+      visibility === 'board_only'
+        ? members
+            .filter((m) => BOARD_ROLES.includes(m.role))
+            .map((m) => m.user_id)
+        : members.map((m) => m.user_id)
+
+    if (targetUserIds.length === 0) return
+
+    // admin client でメールアドレスを取得
+    const adminClient = createAdminClient()
+    const { data: usersData, error: usersError } = await adminClient.auth.admin.listUsers({
+      perPage: 1000,
+    })
+    if (usersError || !usersData) return
+
+    const emails = usersData.users
+      .filter((u) => targetUserIds.includes(u.id) && u.email)
+      .map((u) => u.email as string)
+
+    if (emails.length === 0) return
+
+    const html = announcementEmail({ title, body: body ?? '', orgName })
+    await sendEmail({ to: emails, subject: `【${orgName}】${title}`, html })
+  } catch (err) {
+    console.error('[publishAnnouncement] メール送信エラー:', err)
+  }
 }
 
 export async function unpublishAnnouncement(id: string): Promise<void> {
