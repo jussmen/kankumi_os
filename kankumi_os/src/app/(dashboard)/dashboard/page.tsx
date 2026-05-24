@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { signOut } from '@/app/actions/auth'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -8,32 +7,47 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) {
-    redirect('/login')
-  }
+  if (!user) redirect('/login')
+
+  const { data: membership } = await supabase
+    .from('organization_members')
+    .select('organizations(unit_count)')
+    .eq('user_id', user.id)
+    .eq('is_active', true)
+    .single()
+
+  const org = membership?.organizations as { unit_count: number } | null
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-800">Kankumi OS</h1>
-        <form action={signOut}>
-          <button
-            type="submit"
-            className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            ログアウト
-          </button>
-        </form>
-      </header>
+    <div className="px-6 py-8">
+      <h1 className="text-2xl font-bold text-gray-800 mb-6">ダッシュボード</h1>
 
-      <main className="max-w-4xl mx-auto px-6 py-10">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">
-          ダッシュボード
-        </h2>
-        <p className="text-gray-600">
-          ようこそ、<span className="font-medium">{user.email}</span> さん
-        </p>
-      </main>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <OverviewCard title="総戸数" value={org?.unit_count?.toString() ?? '—'} unit="戸" />
+        <OverviewCard title="入金済み" value="—" unit="戸" />
+        <OverviewCard title="未入金" value="—" unit="戸" />
+        <OverviewCard title="今月の収入" value="—" unit="円" />
+      </div>
+    </div>
+  )
+}
+
+function OverviewCard({
+  title,
+  value,
+  unit,
+}: {
+  title: string
+  value: string
+  unit: string
+}) {
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-5">
+      <p className="text-sm text-gray-500">{title}</p>
+      <p className="mt-2 text-3xl font-bold text-gray-800">
+        {value}
+        <span className="text-base font-normal text-gray-500 ml-1">{unit}</span>
+      </p>
     </div>
   )
 }
