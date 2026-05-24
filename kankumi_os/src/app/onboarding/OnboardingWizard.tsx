@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useActionState } from 'react'
-import { useRouter } from 'next/navigation'
 import { createOrganization } from '@/app/actions/onboarding'
 
 type Step = 1 | 2 | 3 | 4
@@ -25,15 +24,15 @@ interface WizardData {
 const STEPS = [
   '組合基本情報',
   '費用項目の設定',
-  '銀行CSV設定',
+  '銀行口座の設定',
   '完了',
 ]
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1)
 
 export default function OnboardingWizard() {
-  const router = useRouter()
   const [step, setStep] = useState<Step>(1)
+  const [stepError, setStepError] = useState<string | null>(null)
   const [data, setData] = useState<WizardData>({
     name: '',
     address: '',
@@ -67,7 +66,6 @@ export default function OnboardingWizard() {
     return fd
   }
 
-  // Step 1 validation
   function validateStep1(): string | null {
     if (!data.name.trim()) return 'マンション名を入力してください。'
     const n = parseInt(data.unit_count, 10)
@@ -79,14 +77,16 @@ export default function OnboardingWizard() {
     if (step === 1) {
       const err = validateStep1()
       if (err) {
-        alert(err)
+        setStepError(err)
         return
       }
     }
+    setStepError(null)
     setStep((prev) => (prev < 4 ? ((prev + 1) as Step) : prev))
   }
 
   function handleBack() {
+    setStepError(null)
     setStep((prev) => (prev > 1 ? ((prev - 1) as Step) : prev))
   }
 
@@ -135,7 +135,8 @@ export default function OnboardingWizard() {
       {/* Step 1: 組合基本情報 */}
       {step === 1 && (
         <div>
-          <h2 className="text-xl font-bold text-gray-800 mb-6">組合基本情報</h2>
+          <h2 className="text-xl font-bold text-gray-800 mb-1">組合基本情報</h2>
+          <p className="text-sm text-gray-500 mb-6">マンションの基本情報を入力してください。</p>
           <div className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -145,7 +146,7 @@ export default function OnboardingWizard() {
                 type="text"
                 required
                 value={data.name}
-                onChange={(e) => setData({ ...data, name: e.target.value })}
+                onChange={(e) => { setStepError(null); setData({ ...data, name: e.target.value }) }}
                 placeholder="例：サンシャインマンション"
                 className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
@@ -166,16 +167,14 @@ export default function OnboardingWizard() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                戸数 <span className="text-red-500">*</span>
+                総戸数 <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
                 required
                 min={1}
                 value={data.unit_count}
-                onChange={(e) =>
-                  setData({ ...data, unit_count: e.target.value })
-                }
+                onChange={(e) => { setStepError(null); setData({ ...data, unit_count: e.target.value }) }}
                 placeholder="例：50"
                 className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
@@ -183,13 +182,11 @@ export default function OnboardingWizard() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                会計年度開始月 <span className="text-red-500">*</span>
+                会計年度の開始月 <span className="text-red-500">*</span>
               </label>
               <select
                 value={data.fiscal_year_start}
-                onChange={(e) =>
-                  setData({ ...data, fiscal_year_start: e.target.value })
-                }
+                onChange={(e) => setData({ ...data, fiscal_year_start: e.target.value })}
                 className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
                 {MONTHS.map((m) => (
@@ -198,7 +195,16 @@ export default function OnboardingWizard() {
                   </option>
                 ))}
               </select>
+              <p className="mt-1.5 text-xs text-gray-400">
+                多くの管理組合は 4月（4月〜翌3月）です。後から変更できません。
+              </p>
             </div>
+
+            {stepError && (
+              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">
+                {stepError}
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -206,11 +212,11 @@ export default function OnboardingWizard() {
       {/* Step 2: 費用項目の設定 */}
       {step === 2 && (
         <div>
-          <h2 className="text-xl font-bold text-gray-800 mb-2">
+          <h2 className="text-xl font-bold text-gray-800 mb-1">
             費用項目の設定
           </h2>
           <p className="text-sm text-gray-500 mb-6">
-            この組合で使用する費用項目を選択してください。
+            毎月の徴収項目を選択してください。管理費・修繕積立金は全組合で必須です。
           </p>
           <div className="space-y-3">
             {/* 必須項目 */}
@@ -223,9 +229,7 @@ export default function OnboardingWizard() {
               />
               <span className="text-sm font-medium text-gray-700">
                 管理費
-                <span className="ml-2 text-xs text-gray-400 font-normal">
-                  （必須）
-                </span>
+                <span className="ml-2 text-xs text-gray-400 font-normal">（必須）</span>
               </span>
             </label>
 
@@ -238,64 +242,36 @@ export default function OnboardingWizard() {
               />
               <span className="text-sm font-medium text-gray-700">
                 修繕積立金
-                <span className="ml-2 text-xs text-gray-400 font-normal">
-                  （必須）
-                </span>
+                <span className="ml-2 text-xs text-gray-400 font-normal">（必須）</span>
               </span>
             </label>
 
             {/* 任意項目 */}
             {(
               [
-                {
-                  key: 'charge_type_common_fee' as const,
-                  label: '共用費',
-                },
-                {
-                  key: 'charge_type_parking' as const,
-                  label: '駐車場',
-                },
-                {
-                  key: 'charge_type_bike_parking' as const,
-                  label: 'バイク置き場',
-                },
-                {
-                  key: 'charge_type_other' as const,
-                  label: 'その他',
-                  hasAlias: true,
-                },
-              ] as Array<{
-                key: keyof WizardData
-                label: string
-                hasAlias?: boolean
-              }>
+                { key: 'charge_type_common_fee' as const, label: '共用費' },
+                { key: 'charge_type_parking' as const, label: '駐車場使用料' },
+                { key: 'charge_type_bike_parking' as const, label: '自転車・バイク置き場使用料' },
+                { key: 'charge_type_other' as const, label: 'その他', hasAlias: true },
+              ] as Array<{ key: keyof WizardData; label: string; hasAlias?: boolean }>
             ).map(({ key, label, hasAlias }) => (
               <div key={key}>
                 <label className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors">
                   <input
                     type="checkbox"
                     checked={data[key] as boolean}
-                    onChange={(e) =>
-                      setData({ ...data, [key]: e.target.checked })
-                    }
+                    onChange={(e) => setData({ ...data, [key]: e.target.checked })}
                     className="w-4 h-4 rounded accent-blue-600"
                   />
-                  <span className="text-sm font-medium text-gray-700">
-                    {label}
-                  </span>
+                  <span className="text-sm font-medium text-gray-700">{label}</span>
                 </label>
                 {hasAlias && (data[key] as boolean) && (
                   <div className="mt-2 ml-10">
                     <input
                       type="text"
                       value={data.charge_type_other_alias}
-                      onChange={(e) =>
-                        setData({
-                          ...data,
-                          charge_type_other_alias: e.target.value,
-                        })
-                      }
-                      placeholder="表示名（例：自転車置き場）"
+                      onChange={(e) => setData({ ...data, charge_type_other_alias: e.target.value })}
+                      placeholder="項目名を入力（例：専用庭使用料）"
                       className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
                   </div>
@@ -306,14 +282,14 @@ export default function OnboardingWizard() {
         </div>
       )}
 
-      {/* Step 3: 銀行CSV設定 */}
+      {/* Step 3: 銀行口座の設定 */}
       {step === 3 && (
         <div>
-          <h2 className="text-xl font-bold text-gray-800 mb-2">
-            銀行CSV設定
+          <h2 className="text-xl font-bold text-gray-800 mb-1">
+            銀行口座の設定
           </h2>
           <p className="text-sm text-gray-500 mb-6">
-            口座振替データのCSV取り込みに使用する銀行を選択してください。後から変更できます。
+            管理費の入金確認に使用する銀行を選択してください。銀行の明細データを取り込んで自動照合します。後から変更できます。
           </p>
           <div className="space-y-3">
             <label className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors">
@@ -326,12 +302,8 @@ export default function OnboardingWizard() {
                 className="w-4 h-4 accent-blue-600"
               />
               <div>
-                <span className="text-sm font-medium text-gray-700">
-                  りそな銀行
-                </span>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  Shift-JIS / 日付列0 / 金額列3 / 摘要列1
-                </p>
+                <span className="text-sm font-medium text-gray-700">りそな銀行</span>
+                <p className="text-xs text-gray-400 mt-0.5">標準フォーマットで自動設定されます</p>
               </div>
             </label>
 
@@ -345,12 +317,8 @@ export default function OnboardingWizard() {
                 className="w-4 h-4 accent-blue-600"
               />
               <div>
-                <span className="text-sm font-medium text-gray-700">
-                  その他・後で設定する
-                </span>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  設定をスキップしてあとから変更できます
-                </p>
+                <span className="text-sm font-medium text-gray-700">その他・後で設定する</span>
+                <p className="text-xs text-gray-400 mt-0.5">設定画面からいつでも追加できます</p>
               </div>
             </label>
           </div>
@@ -368,20 +336,14 @@ export default function OnboardingWizard() {
               stroke="currentColor"
               strokeWidth={2}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M5 13l4 4L19 7"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-3">
-            設定が完了しました！
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-3">初期設定が完了しました！</h2>
           <p className="text-sm text-gray-500 mb-8">
-            組合の基本情報と費用項目の設定が完了しました。
+            ダッシュボードから住民の登録や入金管理などの機能をご利用いただけます。
             <br />
-            ダッシュボードから各種機能をご利用ください。
+            まずは住民台帳に部屋情報を登録してみましょう。
           </p>
 
           {submitError && (
@@ -390,15 +352,13 @@ export default function OnboardingWizard() {
             </p>
           )}
 
-          <form
-            action={() => submitAction(buildFormData())}
-          >
+          <form action={() => submitAction(buildFormData())}>
             <button
               type="submit"
               disabled={isSubmitting}
               className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isSubmitting ? '登録中...' : 'ダッシュボードへ'}
+              {isSubmitting ? '登録中...' : 'ダッシュボードへ進む'}
             </button>
           </form>
         </div>
@@ -420,7 +380,7 @@ export default function OnboardingWizard() {
             onClick={handleNext}
             className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
           >
-            {step === 3 ? '確認する' : '次へ'}
+            {step === 3 ? '内容を確認する' : '次へ'}
           </button>
         </div>
       )}
