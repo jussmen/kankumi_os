@@ -5,18 +5,11 @@ import type { Database } from '@/types/database'
 
 type PaymentStatus = Database['public']['Enums']['payment_status']
 
-const STATUS_BADGE: Record<PaymentStatus | 'missing', string> = {
-  confirmed: 'bg-green-100 text-green-800',
-  irregular: 'bg-yellow-100 text-yellow-800',
-  missing: 'bg-gray-100 text-gray-400',
-  excluded: 'bg-gray-50 text-gray-300',
-}
-
-const STATUS_LABEL: Record<PaymentStatus | 'missing', string> = {
-  confirmed: '済',
-  irregular: '差異',
-  missing: '—',
-  excluded: '除',
+const STATUS_CELL: Record<PaymentStatus | 'missing', { bg: string; label: string }> = {
+  confirmed: { bg: 'bg-green-100 text-green-800 hover:bg-green-200', label: '済' },
+  irregular:  { bg: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200', label: '差異' },
+  missing:    { bg: 'bg-gray-100 text-gray-400 hover:bg-gray-200', label: '—' },
+  excluded:   { bg: 'bg-gray-50 text-gray-300', label: '除' },
 }
 
 function getLastMonths(n: number): string[] {
@@ -24,9 +17,7 @@ function getLastMonths(n: number): string[] {
   const now = new Date()
   for (let i = n - 1; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    months.push(
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-    )
+    months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
   }
   return months
 }
@@ -57,16 +48,41 @@ export default async function PaymentsPage() {
     .neq('occupancy_status', 'excluded')
     .order('unit_number')
 
-  const { data: records } = await supabase
-    .from('payment_records')
-    .select('unit_id, year_month, status')
-    .eq('organization_id', orgId)
-    .in('year_month', months)
+  const unitIds = (units ?? []).map((u) => u.id)
+
+  const [{ data: records }, { data: profiles }, { data: charges }] = await Promise.all([
+    supabase
+      .from('payment_records')
+      .select('unit_id, year_month, status')
+      .eq('organization_id', orgId)
+      .in('year_month', months),
+    unitIds.length
+      ? supabase
+          .from('payment_profiles')
+          .select('unit_id, source')
+          .in('unit_id', unitIds)
+          .is('effective_to', null)
+      : Promise.resolve({ data: [] as { unit_id: string; source: string }[] }),
+    unitIds.length
+      ? supabase
+          .from('unit_charges')
+          .select('unit_id')
+          .in('unit_id', unitIds)
+          .is('effective_to', null)
+      : Promise.resolve({ data: [] as { unit_id: string }[] }),
+  ])
 
   const recordMap = new Map<string, PaymentStatus>()
   for (const r of records ?? []) {
     recordMap.set(`${r.unit_id}:${r.year_month}`, r.status)
   }
+
+  const profilesByUnit = new Map<string, Set<string>>()
+  for (const p of profiles ?? []) {
+    if (!profilesByUnit.has(p.unit_id)) profilesByUnit.set(p.unit_id, new Set())
+    profilesByUnit.get(p.unit_id)!.add(p.source)
+  }
+  const chargeUnitIds = new Set((charges ?? []).map((c) => c.unit_id))
 
   const { count: unmatchedCount } = await supabase
     .from('bank_transactions')
@@ -79,7 +95,7 @@ export default async function PaymentsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">入金管理</h1>
-          <p className="text-sm text-gray-500 mt-1">月別入金状況マトリクス（直近6ヶ月）</p>
+          <p className="text-sm text-gray-500 mt-1">月別入金状況（直近6ヶ月）</p>
         </div>
         <div className="flex items-center gap-3">
           {(unmatchedCount ?? 0) > 0 && (
@@ -108,14 +124,14 @@ export default async function PaymentsPage() {
         <table className="w-full text-sm bg-white">
           <thead className="bg-gray-50 text-gray-600 border-b border-gray-200">
             <tr>
-              <th className="px-4 py-3 text-left font-medium sticky left-0 bg-gray-50 border-r border-gray-200 min-w-[120px]">
+              <th className="px-4 py-3 text-left font-medium sticky left-0 bg-gray-50 min-w-[120px]">
                 部屋番号
               </th>
+              <th className="px-3 py-3 text-center font-medium min-w-[72px]" title="振込情報（住民）/ 振込情報（管理）/ 月額料金">
+                準備
+              </th>
               {months.map((ym) => (
-                <th
-                  key={ym}
-                  className="px-3 py-3 text-center font-medium min-w-[80px]"
-                >
+                <th key={ym} className="px-3 py-3 text-center font-medium min-w-[72px]">
                   <Link href={`/payments/${ym}`} className="hover:text-blue-600 transition-colors">
                     {ym.replace('-', '/')}
                   </Link>
@@ -126,36 +142,57 @@ export default async function PaymentsPage() {
           <tbody className="divide-y divide-gray-100">
             {(units ?? []).length === 0 ? (
               <tr>
-                <td colSpan={months.length + 1} className="px-4 py-12 text-center text-gray-400">
+                <td colSpan={months.length + 2} className="px-4 py-12 text-center text-gray-400">
                   Unit情報がありません
                 </td>
               </tr>
             ) : (
-              (units ?? []).map((unit) => (
-                <tr key={unit.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2.5 font-medium text-gray-800 sticky left-0 bg-white border-r border-gray-100">
-                    {unit.unit_number}
-                  </td>
-                  {months.map((ym) => {
-                    const status = recordMap.get(`${unit.id}:${ym}`) ?? 'missing'
-                    return (
-                      <td key={ym} className="px-3 py-2.5 text-center">
-                        <span
-                          className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium ${STATUS_BADGE[status]}`}
-                        >
-                          {STATUS_LABEL[status]}
-                        </span>
-                      </td>
-                    )
-                  })}
-                </tr>
-              ))
+              (units ?? []).map((unit) => {
+                const unitProfiles = profilesByUnit.get(unit.id) ?? new Set()
+                const hasUserProfile = unitProfiles.has('user')
+                const hasAdminProfile = unitProfiles.has('admin')
+                const hasCharge = chargeUnitIds.has(unit.id)
+
+                return (
+                  <tr key={unit.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-2 sticky left-0 bg-white">
+                      <Link
+                        href={`/units/${unit.id}`}
+                        className="font-medium text-gray-800 hover:text-blue-600 transition-colors"
+                      >
+                        {unit.unit_number}
+                      </Link>
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      <span className="inline-flex gap-0.5">
+                        <Dot filled={hasUserProfile} title="振込情報（住民）" />
+                        <Dot filled={hasAdminProfile} title="振込情報（管理）" />
+                        <Dot filled={hasCharge} title="月額料金" />
+                      </span>
+                    </td>
+                    {months.map((ym) => {
+                      const status = recordMap.get(`${unit.id}:${ym}`) ?? 'missing'
+                      const cell = STATUS_CELL[status]
+                      return (
+                        <td key={ym} className="px-3 py-2 text-center">
+                          <Link
+                            href={`/payments/${ym}`}
+                            className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium transition-colors ${cell.bg}`}
+                          >
+                            {cell.label}
+                          </Link>
+                        </td>
+                      )
+                    })}
+                  </tr>
+                )
+              })
             )}
           </tbody>
         </table>
       </div>
 
-      <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
+      <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-gray-500">
         <span className="flex items-center gap-1">
           <span className="inline-flex items-center rounded px-1.5 py-0.5 bg-green-100 text-green-800 font-medium">済</span>
           入金確認
@@ -168,7 +205,20 @@ export default async function PaymentsPage() {
           <span className="inline-flex items-center rounded px-1.5 py-0.5 bg-gray-100 text-gray-400 font-medium">—</span>
           未入金
         </span>
+        <span className="flex items-center gap-1">
+          <Dot filled={true} title="" /><Dot filled={true} title="" /><Dot filled={true} title="" />
+          準備: 振込情報（住民）/ 振込情報（管理）/ 月額料金
+        </span>
       </div>
     </div>
+  )
+}
+
+function Dot({ filled, title }: { filled: boolean; title: string }) {
+  return (
+    <span
+      title={title}
+      className={`inline-block w-2 h-2 rounded-full ${filled ? 'bg-blue-500' : 'bg-gray-200'}`}
+    />
   )
 }
