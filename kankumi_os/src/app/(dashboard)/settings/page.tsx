@@ -2,6 +2,34 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 
+function ExportRow({
+  title,
+  description,
+  href,
+  filename,
+}: {
+  title: string
+  description: string
+  href: string
+  filename: string
+}) {
+  return (
+    <div className="flex items-center justify-between px-5 py-4">
+      <div>
+        <p className="text-sm font-medium text-gray-800">{title}</p>
+        <p className="text-xs text-gray-500 mt-0.5">{description}</p>
+      </div>
+      <a
+        href={href}
+        download={filename}
+        className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap"
+      >
+        CSVダウンロード
+      </a>
+    </div>
+  )
+}
+
 export default async function SettingsPage() {
   const supabase = await createClient()
   const {
@@ -36,6 +64,30 @@ export default async function SettingsPage() {
             組合メンバーの招待・ロール変更・削除を行います。
           </p>
         </Link>
+      </div>
+
+      <div className="mt-10 max-w-3xl">
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">データエクスポート</h2>
+        <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-100">
+          <ExportRow
+            title="Unit台帳"
+            description="部屋番号・階数・専有面積・ステータスの一覧"
+            href="/api/export/units"
+            filename="units.csv"
+          />
+          <ExportRow
+            title="入金記録"
+            description="全期間の入金ステータスと入金額"
+            href="/api/export/payments"
+            filename="payments.csv"
+          />
+          <ExportRow
+            title="支出記録"
+            description="全期間の支出一覧（科目・金額・支払先）"
+            href="/api/export/expenses"
+            filename="expenses.csv"
+          />
+        </div>
       </div>
     </div>
   )
