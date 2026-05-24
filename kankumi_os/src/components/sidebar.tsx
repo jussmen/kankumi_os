@@ -40,6 +40,11 @@ const NAV_ITEMS: NavItem[] = [
     roles: ['admin', 'vice_president', 'treasurer', 'auditor'],
   },
   {
+    label: '収支報告書',
+    href: '/accounting/report',
+    roles: ['admin', 'vice_president', 'treasurer', 'auditor'],
+  },
+  {
     label: '議題・タスク',
     href: '/topics',
     roles: ['admin', 'vice_president', 'treasurer', 'board_member', 'resident'],
