@@ -60,10 +60,8 @@ export default async function AuditPage({ searchParams }: PageProps) {
   if (!fiscalYears || fiscalYears.length === 0) {
     return (
       <div className="px-6 py-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">監査サマリー</h1>
-        </div>
-        <p className="text-sm text-gray-400">会計年度が登録されていません。</p>
+        <h1 className="text-2xl font-bold text-gray-800 mb-6">監査サマリー</h1>
+        <NoFiscalYearGuide />
       </div>
     )
   }
@@ -268,6 +266,23 @@ export default async function AuditPage({ searchParams }: PageProps) {
       <p className="mt-4 text-xs text-gray-400 text-right">
         出力日: {new Date().toLocaleDateString('ja-JP')}
       </p>
+    </div>
+  )
+}
+
+function NoFiscalYearGuide() {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white px-8 py-12 text-center max-w-lg">
+      <p className="text-base font-medium text-gray-800 mb-2">会計年度が設定されていません</p>
+      <p className="text-sm text-gray-500 mb-6">
+        会計年度を設定すると、支出管理・予算管理・収支報告書などの会計機能が使えます。
+      </p>
+      <Link
+        href="/checklist/new-fiscal-year"
+        className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+      >
+        会計年度を設定する
+      </Link>
     </div>
   )
 }

@@ -27,7 +27,7 @@ export async function GET() {
 
   const { data: units } = await supabase
     .from('units')
-    .select('unit_number, floor, area_sqm, occupancy_status')
+    .select('unit_number, occupancy_status')
     .eq('organization_id', membership.organization_id)
     .order('unit_number')
 
@@ -39,13 +39,11 @@ export async function GET() {
 
   const rows = (units ?? []).map((u) => [
     u.unit_number ?? '',
-    u.floor != null ? String(u.floor) : '',
-    u.area_sqm != null ? String(u.area_sqm) : '',
     statusLabel[u.occupancy_status] ?? u.occupancy_status,
   ])
 
   const bom = '﻿'
-  const csv = bom + toCsv(['部屋番号', '階数', '専有面積(㎡)', 'ステータス'], rows)
+  const csv = bom + toCsv(['部屋番号', '入居状態'], rows)
 
   return new Response(csv, {
     headers: {

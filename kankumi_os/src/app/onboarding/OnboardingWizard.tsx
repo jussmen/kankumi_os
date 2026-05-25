@@ -3,7 +3,7 @@
 import { useState, useActionState } from 'react'
 import { createOrganization } from '@/app/actions/onboarding'
 
-type Step = 1 | 2 | 3 | 4
+type Step = 1 | 2 | 3
 
 interface WizardData {
   // Step 1
@@ -25,7 +25,6 @@ const STEPS = [
   '組合基本情報',
   '費用項目の設定',
   '銀行口座の設定',
-  '完了',
 ]
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1)
@@ -82,7 +81,7 @@ export default function OnboardingWizard() {
       }
     }
     setStepError(null)
-    setStep((prev) => (prev < 4 ? ((prev + 1) as Step) : prev))
+    setStep((prev) => (prev < 3 ? ((prev + 1) as Step) : prev))
   }
 
   function handleBack() {
@@ -196,7 +195,7 @@ export default function OnboardingWizard() {
                 ))}
               </select>
               <p className="mt-1.5 text-xs text-gray-400">
-                多くの管理組合は 4月（4月〜翌3月）です。後から変更できません。
+                ほとんどの管理組合は4月始まりです。
               </p>
             </div>
 
@@ -322,68 +321,44 @@ export default function OnboardingWizard() {
               </div>
             </label>
           </div>
-        </div>
-      )}
-
-      {/* Step 4: 完了画面 */}
-      {step === 4 && (
-        <div className="text-center py-4">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg
-              className="w-8 h-8 text-green-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-3">初期設定が完了しました！</h2>
-          <p className="text-sm text-gray-500 mb-8">
-            ダッシュボードから住民の登録や入金管理などの機能をご利用いただけます。
-            <br />
-            まずは住民台帳に部屋情報を登録してみましょう。
-          </p>
 
           {submitError && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 mb-4">
+            <p className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">
               {submitError}
             </p>
           )}
+        </div>
+      )}
 
+      <div className="flex justify-between mt-8 pt-6 border-t border-gray-100">
+        <button
+          type="button"
+          onClick={handleBack}
+          disabled={step === 1}
+          className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          戻る
+        </button>
+        {step === 3 ? (
           <form action={() => submitAction(buildFormData())}>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
-              {isSubmitting ? '登録中...' : 'ダッシュボードへ進む'}
+              {isSubmitting ? '登録中...' : '設定を完了してはじめる'}
             </button>
           </form>
-        </div>
-      )}
-
-      {/* ナビゲーションボタン（Step 4 以外） */}
-      {step < 4 && (
-        <div className="flex justify-between mt-8 pt-6 border-t border-gray-100">
-          <button
-            type="button"
-            onClick={handleBack}
-            disabled={step === 1}
-            className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            戻る
-          </button>
+        ) : (
           <button
             type="button"
             onClick={handleNext}
             className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
           >
-            {step === 3 ? '内容を確認する' : '次へ'}
+            次へ
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

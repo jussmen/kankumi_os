@@ -1107,6 +1107,7 @@ export type Database = {
           effective_from: string
           effective_to: string | null
           id: string
+          is_not_applicable: boolean
           organization_id: string
           unit_id: string
         }
@@ -1117,6 +1118,7 @@ export type Database = {
           effective_from: string
           effective_to?: string | null
           id?: string
+          is_not_applicable?: boolean
           organization_id: string
           unit_id: string
         }
@@ -1127,6 +1129,7 @@ export type Database = {
           effective_from?: string
           effective_to?: string | null
           id?: string
+          is_not_applicable?: boolean
           organization_id?: string
           unit_id?: string
         }

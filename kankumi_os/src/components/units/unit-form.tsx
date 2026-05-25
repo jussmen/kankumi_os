@@ -15,8 +15,6 @@ interface UnitFormProps {
   action: (prevState: string | null, formData: FormData) => Promise<string | null>
   defaultValues?: {
     unit_number?: string
-    floor?: number | null
-    area_sqm?: number | null
     occupancy_status?: OccupancyStatus
   }
   submitLabel?: string
@@ -49,32 +47,6 @@ export function UnitForm({
           required
           defaultValue={defaultValues?.unit_number ?? ''}
           placeholder="例: 101"
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">階</label>
-        <input
-          name="floor"
-          type="number"
-          defaultValue={defaultValues?.floor ?? ''}
-          placeholder="例: 1"
-          min={-5}
-          max={100}
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">専有面積 (㎡)</label>
-        <input
-          name="area_sqm"
-          type="number"
-          step="0.01"
-          defaultValue={defaultValues?.area_sqm ?? ''}
-          placeholder="例: 65.5"
-          min={1}
           className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>

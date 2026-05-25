@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { inviteMember } from '@/app/actions/members'
 import type { Database } from '@/types/database'
 
@@ -25,13 +25,15 @@ const ROLE_LABELS: Record<MemberRole, string> = {
 }
 
 export function InviteForm({ units }: InviteFormProps) {
+  const [selectedRole, setSelectedRole] = useState<MemberRole>('resident')
   const [error, formAction, isPending] = useActionState(
     async (prevState: string | null, formData: FormData) => {
-      const result = await inviteMember(prevState, formData)
-      return result
+      return inviteMember(prevState, formData)
     },
     null
   )
+
+  const isResident = selectedRole === 'resident'
 
   return (
     <form action={formAction} className="space-y-4">
@@ -56,7 +58,8 @@ export function InviteForm({ units }: InviteFormProps) {
         <select
           id="role"
           name="role"
-          defaultValue="resident"
+          value={selectedRole}
+          onChange={(e) => setSelectedRole(e.target.value as MemberRole)}
           className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {(Object.entries(ROLE_LABELS) as [MemberRole, string][]).map(([value, label]) => (
@@ -67,17 +70,18 @@ export function InviteForm({ units }: InviteFormProps) {
         </select>
       </div>
 
-      {units.length > 0 && (
+      {isResident && (
         <div>
           <label htmlFor="unit_id" className="block text-sm font-medium text-gray-700 mb-1">
-            部屋番号（住民の場合）
+            部屋番号 <span className="text-red-500">*</span>
           </label>
           <select
             id="unit_id"
             name="unit_id"
+            required
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">— 選択しない —</option>
+            <option value="">— 選択してください —</option>
             {units.map((unit) => (
               <option key={unit.id} value={unit.id}>
                 {unit.unit_number}

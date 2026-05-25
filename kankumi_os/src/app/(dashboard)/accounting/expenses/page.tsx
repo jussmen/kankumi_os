@@ -43,13 +43,8 @@ export default async function ExpensesPage({ searchParams }: PageProps) {
   if (!fiscalYears || fiscalYears.length === 0) {
     return (
       <div className="px-6 py-8">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">支出管理</h1>
-        <div className="rounded-lg border border-dashed border-gray-300 py-16 text-center">
-          <p className="text-gray-500 text-sm mb-4">会計年度が登録されていません。</p>
-          <Link href="/checklist/new-fiscal-year" className="text-sm text-blue-600 hover:underline">
-            会計年度を作成してください
-          </Link>
-        </div>
+        <h1 className="text-2xl font-bold text-gray-800 mb-6">支出管理</h1>
+        <NoFiscalYearGuide />
       </div>
     )
   }
@@ -102,6 +97,13 @@ export default async function ExpensesPage({ searchParams }: PageProps) {
             + 支出登録
           </Link>
         )}
+      </div>
+
+      <div className="flex gap-4 mb-6 border-b border-gray-200 pb-4">
+        <Link href="/accounting/expenses" className="text-sm font-medium text-blue-600 border-b-2 border-blue-600 pb-1">支出管理</Link>
+        <Link href="/accounting/budget" className="text-sm text-gray-500 hover:text-gray-700 pb-1">予算管理</Link>
+        <Link href="/accounting/annual" className="text-sm text-gray-500 hover:text-gray-700 pb-1">年間照合</Link>
+        <Link href="/accounting/audit" className="text-sm text-gray-500 hover:text-gray-700 pb-1">監査</Link>
       </div>
 
       <div className="mb-6 flex items-center gap-3">
@@ -218,6 +220,23 @@ export default async function ExpensesPage({ searchParams }: PageProps) {
           </table>
         </div>
       )}
+    </div>
+  )
+}
+
+function NoFiscalYearGuide() {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white px-8 py-12 text-center max-w-lg">
+      <p className="text-base font-medium text-gray-800 mb-2">会計年度が設定されていません</p>
+      <p className="text-sm text-gray-500 mb-6">
+        会計年度を設定すると、支出管理・予算管理・収支報告書などの会計機能が使えます。
+      </p>
+      <Link
+        href="/checklist/new-fiscal-year"
+        className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+      >
+        会計年度を設定する
+      </Link>
     </div>
   )
 }

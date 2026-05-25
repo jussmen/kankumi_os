@@ -25,16 +25,6 @@ async function getContext() {
   return { supabase, orgId: data.organization_id }
 }
 
-function parseFloor(raw: string): number | null {
-  const n = parseInt(raw, 10)
-  return raw && !isNaN(n) ? n : null
-}
-
-function parseArea(raw: string): number | null {
-  const n = parseFloat(raw)
-  return raw && !isNaN(n) ? n : null
-}
-
 export async function createUnit(
   _prevState: string | null,
   formData: FormData
@@ -47,8 +37,6 @@ export async function createUnit(
   const { error } = await supabase.from('units').insert({
     organization_id: orgId,
     unit_number: unitNumber,
-    floor: parseFloor(formData.get('floor') as string),
-    area_sqm: parseArea(formData.get('area_sqm') as string),
     occupancy_status: (formData.get('occupancy_status') as OccupancyStatus) || 'occupied',
   })
 
@@ -75,8 +63,6 @@ export async function updateUnit(
     .from('units')
     .update({
       unit_number: unitNumber,
-      floor: parseFloor(formData.get('floor') as string),
-      area_sqm: parseArea(formData.get('area_sqm') as string),
       occupancy_status: formData.get('occupancy_status') as OccupancyStatus,
     })
     .eq('id', id)
@@ -108,8 +94,6 @@ export async function updateOccupancyStatus(
 export async function importUnits(
   rows: Array<{
     unit_number: string
-    floor: number | null
-    area_sqm: number | null
     occupancy_status: OccupancyStatus
   }>
 ): Promise<{ error: string | null; count: number }> {
@@ -132,9 +116,12 @@ export async function upsertUnitCharge(
   unitId: string,
   chargeTypeId: string,
   amount: number,
-  effectiveFrom: string
+  isNotApplicable: boolean = false
 ): Promise<{ error: string | null }> {
   const { supabase, orgId } = await getContext()
+
+  const now = new Date()
+  const effectiveFrom = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
 
   await supabase
     .from('unit_charges')
@@ -148,12 +135,14 @@ export async function upsertUnitCharge(
     organization_id: orgId,
     unit_id: unitId,
     charge_type_id: chargeTypeId,
-    amount,
+    amount: isNotApplicable ? 0 : amount,
     effective_from: effectiveFrom,
+    is_not_applicable: isNotApplicable,
   })
 
   if (error) return { error: '月額料金の設定に失敗しました。' }
 
   revalidatePath(`/units/${unitId}`)
+  revalidatePath('/units')
   return { error: null }
 }

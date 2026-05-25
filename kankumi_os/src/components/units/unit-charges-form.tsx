@@ -12,6 +12,8 @@ const CHARGE_TYPE_LABELS: Record<string, string> = {
   other: 'その他',
 }
 
+const REQUIRED_TYPE_ENUMS = ['management_fee', 'reserve_fund']
+
 interface ChargeType {
   id: string
   type: string
@@ -23,6 +25,7 @@ interface UnitCharge {
   charge_type_id: string
   amount: number
   effective_from: string
+  is_not_applicable: boolean
 }
 
 interface UnitChargesFormProps {
@@ -31,78 +34,96 @@ interface UnitChargesFormProps {
   currentCharges: UnitCharge[]
 }
 
-export function UnitChargesForm({
-  unitId,
-  chargeTypes,
-  currentCharges,
-}: UnitChargesFormProps) {
+export function UnitChargesForm({ unitId, chargeTypes, currentCharges }: UnitChargesFormProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [amount, setAmount] = useState('')
-  const [effectiveFrom, setEffectiveFrom] = useState(
-    new Date().toISOString().slice(0, 7) + '-01'
-  )
+  const [notApplicable, setNotApplicable] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
   const currentChargeMap = new Map(currentCharges.map((c) => [c.charge_type_id, c]))
 
-  function startEdit(chargeTypeId: string) {
+  function startEdit(chargeTypeId: string, isOptional: boolean) {
     const existing = currentChargeMap.get(chargeTypeId)
-    setAmount(existing?.amount?.toString() ?? '')
-    setEffectiveFrom(new Date().toISOString().slice(0, 7) + '-01')
+    if (existing) {
+      setNotApplicable(existing.is_not_applicable)
+      setAmount(existing.is_not_applicable ? '' : existing.amount.toString())
+    } else {
+      setNotApplicable(isOptional)
+      setAmount('')
+    }
     setEditingId(chargeTypeId)
     setError(null)
   }
 
   function handleSave(chargeTypeId: string) {
-    const amountNum = parseFloat(amount)
-    if (isNaN(amountNum) || amountNum < 0) {
-      setError('金額を正しく入力してください。')
-      return
-    }
-
-    startTransition(async () => {
-      const result = await upsertUnitCharge(unitId, chargeTypeId, amountNum, effectiveFrom)
-      if (result.error) {
-        setError(result.error)
-      } else {
-        setEditingId(null)
-        setError(null)
+    if (!notApplicable) {
+      const amountNum = parseFloat(amount)
+      if (isNaN(amountNum) || amountNum <= 0) {
+        setError('金額を正しく入力してください。')
+        return
       }
-    })
+      startTransition(async () => {
+        const result = await upsertUnitCharge(unitId, chargeTypeId, amountNum, false)
+        if (result.error) { setError(result.error) } else { setEditingId(null); setError(null) }
+      })
+    } else {
+      startTransition(async () => {
+        const result = await upsertUnitCharge(unitId, chargeTypeId, 0, true)
+        if (result.error) { setError(result.error) } else { setEditingId(null); setError(null) }
+      })
+    }
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       {error && (
-        <p className="text-sm text-red-600">{error}</p>
+        <p className="mb-2 text-sm text-red-600 bg-red-50 rounded px-3 py-2">{error}</p>
       )}
       {chargeTypes.map((ct) => {
+        const isOptional = !REQUIRED_TYPE_ENUMS.includes(ct.type)
         const label = ct.alias_name ?? CHARGE_TYPE_LABELS[ct.type] ?? ct.type
         const current = currentChargeMap.get(ct.id)
         const isEditing = editingId === ct.id
 
         return (
-          <div key={ct.id} className="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0">
-            <span className="w-36 text-sm text-gray-700">{label}</span>
+          <div key={ct.id} className="flex items-center gap-3 py-2.5 border-b border-gray-100 last:border-0">
+            {/* 項目名 */}
+            <span className="w-40 text-sm text-gray-700 shrink-0">
+              {label}
+              {!isOptional && <span className="ml-1 text-xs text-gray-400">必須</span>}
+            </span>
 
             {isEditing ? (
-              <>
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="例: 10000"
-                  min={0}
-                  className="w-28 rounded-md border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-500">円/月</span>
-                <input
-                  type="date"
-                  value={effectiveFrom}
-                  onChange={(e) => setEffectiveFrom(e.target.value)}
-                  className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+              <div className="flex items-center gap-2 flex-wrap">
+                {isOptional && (
+                  <label className="flex items-center gap-1.5 text-sm text-gray-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={notApplicable}
+                      onChange={(e) => {
+                        setNotApplicable(e.target.checked)
+                        if (e.target.checked) setAmount('')
+                      }}
+                      className="w-4 h-4 accent-blue-600"
+                    />
+                    利用なし
+                  </label>
+                )}
+                {!notApplicable && (
+                  <>
+                    <input
+                      type="number"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      placeholder="例: 10000"
+                      min={1}
+                      autoFocus={!isOptional}
+                      className="w-32 rounded-md border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-500 shrink-0">円/月</span>
+                  </>
+                )}
                 <button
                   onClick={() => handleSave(ct.id)}
                   disabled={isPending}
@@ -116,22 +137,24 @@ export function UnitChargesForm({
                 >
                   取消
                 </button>
-              </>
+              </div>
             ) : (
-              <>
-                <span className="text-sm font-medium text-gray-900 w-28 text-right">
-                  {current ? `${current.amount.toLocaleString()}円` : '—'}
-                </span>
-                <span className="text-sm text-gray-400 flex-1">
-                  {current ? `/月 (${current.effective_from}〜)` : '未設定'}
+              <div className="flex items-center gap-2 flex-1">
+                <span className="text-sm font-medium text-gray-900 flex-1">
+                  {current
+                    ? current.is_not_applicable
+                      ? <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500">利用なし</span>
+                      : `${current.amount.toLocaleString()}円/月`
+                    : <span className="text-gray-400">未設定</span>
+                  }
                 </span>
                 <button
-                  onClick={() => startEdit(ct.id)}
-                  className="text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                  onClick={() => startEdit(ct.id, isOptional)}
+                  className="text-xs text-blue-600 hover:text-blue-800 transition-colors shrink-0"
                 >
                   {current ? '変更' : '設定'}
                 </button>
-              </>
+              </div>
             )}
           </div>
         )

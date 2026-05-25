@@ -9,8 +9,6 @@ type OccupancyStatus = Database['public']['Enums']['occupancy_status']
 
 interface ParsedRow {
   unit_number: string
-  floor: number | null
-  area_sqm: number | null
   occupancy_status: OccupancyStatus
   _error?: string
 }
@@ -31,18 +29,14 @@ function parseCSV(text: string): ParsedRow[] {
   const rows: ParsedRow[] = []
   for (let i = 1; i < lines.length; i++) {
     const cols = lines[i].split(',').map((c) => c.trim().replace(/^"|"$/g, ''))
-    const [unitNumber, floorRaw, areaRaw, statusRaw] = cols
+    const [unitNumber, statusRaw] = cols
 
     if (!unitNumber) continue
 
-    const floor = floorRaw ? parseInt(floorRaw, 10) : null
-    const areaSqm = areaRaw ? parseFloat(areaRaw) : null
     const occupancyStatus = OCCUPANCY_MAP[statusRaw] ?? 'occupied'
 
     rows.push({
       unit_number: unitNumber,
-      floor: floor && !isNaN(floor) ? floor : null,
-      area_sqm: areaSqm && !isNaN(areaSqm) ? areaSqm : null,
       occupancy_status: occupancyStatus,
       _error: !unitNumber ? '部屋番号が空です' : undefined,
     })
@@ -51,7 +45,7 @@ function parseCSV(text: string): ParsedRow[] {
 }
 
 const TEMPLATE_CSV =
-  '部屋番号,階,専有面積(㎡),入居状態\n101,1,45.5,居住中\n102,2,52.0,空室\n201,2,65.0,居住中\n'
+  '部屋番号,入居状態\n101,居住中\n102,空室\n201,居住中\n'
 
 const OCCUPANCY_LABELS: Record<OccupancyStatus, string> = {
   occupied: '居住中',
@@ -141,8 +135,6 @@ export function CsvImport() {
               <thead className="bg-gray-50 text-gray-600">
                 <tr>
                   <th className="px-4 py-2 text-left font-medium">部屋番号</th>
-                  <th className="px-4 py-2 text-left font-medium">階</th>
-                  <th className="px-4 py-2 text-left font-medium">専有面積</th>
                   <th className="px-4 py-2 text-left font-medium">入居状態</th>
                 </tr>
               </thead>
@@ -154,10 +146,6 @@ export function CsvImport() {
                       {row._error && (
                         <span className="ml-2 text-xs text-red-600">{row._error}</span>
                       )}
-                    </td>
-                    <td className="px-4 py-2 text-gray-600">{row.floor ?? '—'}</td>
-                    <td className="px-4 py-2 text-gray-600">
-                      {row.area_sqm != null ? `${row.area_sqm}㎡` : '—'}
                     </td>
                     <td className="px-4 py-2 text-gray-600">
                       {OCCUPANCY_LABELS[row.occupancy_status]}

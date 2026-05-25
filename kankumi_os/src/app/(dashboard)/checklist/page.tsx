@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { seedChecklistFromTemplates } from '@/app/actions/checklist'
 import { ChecklistItemRow } from '@/components/checklist/checklist-item-row'
 import { AddChecklistForm } from '@/components/checklist/add-checklist-form'
+import { FiscalYearSelect } from '@/components/checklist/fiscal-year-select'
 
 interface PageProps {
   searchParams: Promise<{ fiscal_year_id?: string }>
@@ -90,22 +91,7 @@ export default async function ChecklistPage({ searchParams }: PageProps) {
 
       <div className="flex items-center gap-3 mb-6">
         <label className="text-sm font-medium text-gray-700">会計年度</label>
-        <div className="relative">
-          <select
-            className="rounded-md border border-gray-300 pl-3 pr-8 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white"
-            defaultValue={selectedYear.id}
-            onChange={(e) => {
-              window.location.href = `/checklist?fiscal_year_id=${e.target.value}`
-            }}
-          >
-            {fiscalYears.map((fy) => (
-              <option key={fy.id} value={fy.id}>
-                {fy.year}年度 ({fy.start_date} 〜 {fy.end_date})
-                {fy.status === 'active' ? ' [進行中]' : ' [完了]'}
-              </option>
-            ))}
-          </select>
-        </div>
+        <FiscalYearSelect fiscalYears={fiscalYears} defaultValue={selectedYear.id} />
         <Link href="/calendar" className="ml-auto text-sm text-blue-600 hover:text-blue-800">
           カレンダーで見る →
         </Link>

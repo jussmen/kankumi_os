@@ -67,23 +67,8 @@ const NAV_GROUPS: NavGroup[] = [
         roles: ['admin', 'vice_president', 'treasurer', 'auditor'],
       },
       {
-        label: '年間照合',
-        href: '/accounting/annual',
-        roles: ['admin', 'vice_president', 'treasurer', 'auditor'],
-      },
-      {
-        label: '予算管理',
-        href: '/accounting/budget',
-        roles: ['admin', 'vice_president', 'treasurer', 'auditor'],
-      },
-      {
-        label: '収支報告書',
+        label: '会計レポート',
         href: '/accounting/report',
-        roles: ['admin', 'vice_president', 'treasurer', 'auditor'],
-      },
-      {
-        label: '監査サマリー',
-        href: '/accounting/audit',
         roles: ['admin', 'vice_president', 'treasurer', 'auditor'],
       },
     ],

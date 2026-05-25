@@ -36,15 +36,7 @@ export default async function ReportListPage() {
       </div>
 
       {!fiscalYears || fiscalYears.length === 0 ? (
-        <div className="bg-white rounded-lg border border-gray-200 px-6 py-12 text-center">
-          <p className="text-sm text-gray-400">会計年度が登録されていません。</p>
-          <Link
-            href="/checklist/new-fiscal-year"
-            className="mt-3 inline-block text-sm text-blue-600 hover:text-blue-800"
-          >
-            会計年度を登録する →
-          </Link>
-        </div>
+        <NoFiscalYearGuide />
       ) : (
         <div className="space-y-3 max-w-2xl">
           {fiscalYears.map((fy) => (
@@ -75,6 +67,23 @@ export default async function ReportListPage() {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+function NoFiscalYearGuide() {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white px-8 py-12 text-center max-w-lg">
+      <p className="text-base font-medium text-gray-800 mb-2">会計年度が設定されていません</p>
+      <p className="text-sm text-gray-500 mb-6">
+        会計年度を設定すると、支出管理・予算管理・収支報告書などの会計機能が使えます。
+      </p>
+      <Link
+        href="/checklist/new-fiscal-year"
+        className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+      >
+        会計年度を設定する
+      </Link>
     </div>
   )
 }

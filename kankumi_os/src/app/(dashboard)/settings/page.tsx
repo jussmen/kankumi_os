@@ -64,6 +64,15 @@ export default async function SettingsPage() {
             組合メンバーの招待・ロール変更・削除を行います。
           </p>
         </Link>
+        <Link
+          href="/settings/charge-types"
+          className="flex flex-col gap-2 rounded-lg border border-gray-200 bg-white p-5 hover:border-blue-300 hover:shadow-sm transition-all"
+        >
+          <h2 className="text-base font-semibold text-gray-800">費用項目の管理</h2>
+          <p className="text-sm text-gray-500">
+            管理費・修繕積立金などの徴収項目を追加・変更します。
+          </p>
+        </Link>
       </div>
 
       <div className="mt-10 max-w-3xl">
