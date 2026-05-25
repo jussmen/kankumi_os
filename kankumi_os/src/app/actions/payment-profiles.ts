@@ -61,7 +61,6 @@ export async function registerPaymentProfile(
     source: 'user',
     transfer_name: (formData.get('transfer_name') as string).trim(),
     bank_name: (formData.get('bank_name') as string).trim(),
-    account_last4: (formData.get('account_last4') as string).trim(),
     effective_from: effectiveFrom,
     created_by: userId,
   })
@@ -99,7 +98,6 @@ export async function adminSetPaymentProfile(
     source: 'admin',
     transfer_name: (formData.get('transfer_name') as string).trim(),
     bank_name: (formData.get('bank_name') as string).trim(),
-    account_last4: (formData.get('account_last4') as string).trim(),
     effective_from: effectiveFrom,
     created_by: userId,
   })

@@ -873,7 +873,6 @@ export type Database = {
       }
       payment_profiles: {
         Row: {
-          account_last4: string
           bank_name: string
           created_at: string
           created_by: string | null
@@ -886,7 +885,6 @@ export type Database = {
           unit_id: string
         }
         Insert: {
-          account_last4: string
           bank_name: string
           created_at?: string
           created_by?: string | null
@@ -899,7 +897,6 @@ export type Database = {
           unit_id: string
         }
         Update: {
-          account_last4?: string
           bank_name?: string
           created_at?: string
           created_by?: string | null
@@ -1159,11 +1156,13 @@ export type Database = {
       }
       unit_owners: {
         Row: {
+          charge_confirmed_at: string | null
           created_at: string
           email: string | null
           end_date: string | null
           id: string
           name: string
+          name_kana: string | null
           organization_id: string
           owner_type: Database["public"]["Enums"]["owner_type"]
           phone: string | null
@@ -1172,11 +1171,13 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          charge_confirmed_at?: string | null
           created_at?: string
           email?: string | null
           end_date?: string | null
           id?: string
           name: string
+          name_kana?: string | null
           organization_id: string
           owner_type?: Database["public"]["Enums"]["owner_type"]
           phone?: string | null
@@ -1185,11 +1186,13 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          charge_confirmed_at?: string | null
           created_at?: string
           email?: string | null
           end_date?: string | null
           id?: string
           name?: string
+          name_kana?: string | null
           organization_id?: string
           owner_type?: Database["public"]["Enums"]["owner_type"]
           phone?: string | null

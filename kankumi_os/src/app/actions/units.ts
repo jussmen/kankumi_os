@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { inviteMember } from './members'
 import type { Database } from '@/types/database'
 
 type OccupancyStatus = Database['public']['Enums']['occupancy_status']
@@ -142,7 +143,29 @@ export async function upsertUnitCharge(
 
   if (error) return { error: '月額料金の設定に失敗しました。' }
 
+  // 料金変更で住民の確認を無効化
+  await supabase
+    .from('unit_owners')
+    .update({ charge_confirmed_at: null })
+    .eq('unit_id', unitId)
+    .eq('organization_id', orgId)
+    .is('end_date', null)
+
   revalidatePath(`/units/${unitId}`)
   revalidatePath('/units')
   return { error: null }
+}
+
+export async function inviteResidentToUnit(
+  unitId: string,
+  _prevState: string | null,
+  formData: FormData
+): Promise<string | null> {
+  const fd = new FormData()
+  fd.set('email', (formData.get('email') as string) ?? '')
+  fd.set('role', 'resident')
+  fd.set('unit_id', unitId)
+  const result = await inviteMember(null, fd)
+  if (!result) revalidatePath(`/units/${unitId}`)
+  return result
 }

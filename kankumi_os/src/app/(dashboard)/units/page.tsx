@@ -51,14 +51,6 @@ export default async function UnitsPage({ searchParams }: PageProps) {
 
   if (isResident && myUnitId) {
     unitsQuery.eq('id', myUnitId)
-  } else if (isResident && !myUnitId) {
-    // 部屋未登録の住民は空リストを返す
-    return (
-      <div className="px-6 py-8">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">住民台帳</h1>
-        <p className="text-sm text-gray-500">部屋が登録されていません。管理者にお問い合わせください。</p>
-      </div>
-    )
   }
 
   const [
@@ -75,13 +67,22 @@ export default async function UnitsPage({ searchParams }: PageProps) {
 
   const unitIds = (units ?? []).map((u) => u.id)
 
-  const { data: charges } = unitIds.length
-    ? await supabase
-        .from('unit_charges')
-        .select('unit_id, charge_type_id, amount, is_not_applicable')
-        .in('unit_id', unitIds)
-        .is('effective_to', null)
-    : { data: [] }
+  const [{ data: charges }, { data: ownerRows }] = await Promise.all([
+    unitIds.length
+      ? supabase
+          .from('unit_charges')
+          .select('unit_id, charge_type_id, amount, is_not_applicable')
+          .in('unit_id', unitIds)
+          .is('effective_to', null)
+      : Promise.resolve({ data: [] }),
+    unitIds.length
+      ? supabase
+          .from('unit_owners')
+          .select('unit_id, charge_confirmed_at')
+          .in('unit_id', unitIds)
+          .is('end_date', null)
+      : Promise.resolve({ data: [] }),
+  ])
 
   const requiredTypeIds = new Set(
     (orgChargeTypes ?? []).filter((ct) => REQUIRED_TYPE_ENUMS.includes(ct.type)).map((ct) => ct.id)
@@ -97,6 +98,10 @@ export default async function UnitsPage({ searchParams }: PageProps) {
     chargesByUnit.get(c.unit_id)!.push(c)
   }
 
+  const confirmedUnitIds = new Set(
+    (ownerRows ?? []).filter((o) => o.charge_confirmed_at !== null).map((o) => o.unit_id)
+  )
+
   const tableUnits = (units ?? []).map((u) => {
     const uc = chargesByUnit.get(u.id) ?? []
     const okRequired = new Set(
@@ -111,7 +116,8 @@ export default async function UnitsPage({ searchParams }: PageProps) {
       (orgChargeTypes ?? []).length > 0 &&
       okRequired.size === requiredTypeIds.size &&
       okOptional.size === optionalTypeIds.size
-    return { ...u, hasCharge }
+    const chargeConfirmed = hasCharge && confirmedUnitIds.has(u.id)
+    return { ...u, hasCharge, chargeConfirmed }
   })
 
   return (

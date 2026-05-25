@@ -16,7 +16,7 @@ export default async function DashboardPage() {
 
   const { data: membership } = await supabase
     .from('organization_members')
-    .select('organization_id, organizations(unit_count, name)')
+    .select('organization_id, role, organizations(unit_count, name)')
     .eq('user_id', user.id)
     .eq('is_active', true)
     .single()
@@ -25,6 +25,7 @@ export default async function DashboardPage() {
   const orgId = (membership as { organization_id?: string } | null)?.organization_id
 
   if (!orgId) redirect('/onboarding')
+  if (membership?.role === 'resident') redirect('/announcements')
 
   const yearMonth = currentYearMonth()
 

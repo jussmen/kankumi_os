@@ -41,22 +41,6 @@ export function PaymentProfileForm({ action, submitLabel = '登録' }: PaymentPr
           placeholder="例: ○○銀行"
         />
       </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="account_last4">
-          口座下4桁
-        </label>
-        <input
-          id="account_last4"
-          name="account_last4"
-          type="text"
-          required
-          maxLength={4}
-          pattern="[0-9]{4}"
-          inputMode="numeric"
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="例: 1234"
-        />
-      </div>
       <button
         type="submit"
         disabled={isPending}

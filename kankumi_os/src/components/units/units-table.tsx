@@ -27,6 +27,7 @@ export interface UnitRow {
   unit_number: string
   occupancy_status: OccupancyStatus
   hasCharge: boolean
+  chargeConfirmed: boolean
 }
 
 interface UnitsTableProps {
@@ -82,7 +83,8 @@ export function UnitsTable({ units, canEdit }: UnitsTableProps) {
       } else if (sortKey === 'occupancy_status') {
         cmp = OCCUPANCY_ORDER[a.occupancy_status] - OCCUPANCY_ORDER[b.occupancy_status]
       } else if (sortKey === 'charge') {
-        cmp = (a.hasCharge ? 0 : 1) - (b.hasCharge ? 0 : 1)
+        const score = (u: UnitRow) => u.chargeConfirmed ? 0 : u.hasCharge ? 1 : 2
+        cmp = score(a) - score(b)
       }
       return sortDir === 'asc' ? cmp : -cmp
     })
@@ -112,7 +114,7 @@ export function UnitsTable({ units, canEdit }: UnitsTableProps) {
                 <SortIndicator active={sortKey === 'occupancy_status'} dir={sortDir} />
               </th>
               <th className={thClass('charge')} onClick={() => handleSort('charge')}>
-                月額料金
+                台帳ステータス
                 <SortIndicator active={sortKey === 'charge'} dir={sortDir} />
               </th>
             </tr>
@@ -138,12 +140,12 @@ export function UnitsTable({ units, canEdit }: UnitsTableProps) {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    {unit.hasCharge ? (
-                      <span className="text-sm text-green-600 font-medium">✓ 設定済</span>
-                    ) : canEdit ? (
-                      <span className="text-sm text-gray-400">未設定</span>
+                    {unit.chargeConfirmed ? (
+                      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-100 text-green-700">台帳有効</span>
+                    ) : unit.hasCharge ? (
+                      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-700">要確認</span>
                     ) : (
-                      <span className="text-sm text-gray-400">未設定</span>
+                      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-500">未設定</span>
                     )}
                   </td>
                 </tr>

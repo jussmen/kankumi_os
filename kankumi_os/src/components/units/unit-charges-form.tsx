@@ -32,14 +32,16 @@ interface UnitChargesFormProps {
   unitId: string
   chargeTypes: ChargeType[]
   currentCharges: UnitCharge[]
+  hasResident?: boolean
 }
 
-export function UnitChargesForm({ unitId, chargeTypes, currentCharges }: UnitChargesFormProps) {
+export function UnitChargesForm({ unitId, chargeTypes, currentCharges, hasResident = false }: UnitChargesFormProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [amount, setAmount] = useState('')
   const [notApplicable, setNotApplicable] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [confirmingId, setConfirmingId] = useState<string | null>(null)
 
   const currentChargeMap = new Map(currentCharges.map((c) => [c.charge_type_id, c]))
 
@@ -57,6 +59,17 @@ export function UnitChargesForm({ unitId, chargeTypes, currentCharges }: UnitCha
   }
 
   function handleSave(chargeTypeId: string) {
+    const existing = currentChargeMap.get(chargeTypeId)
+    // 既存の料金があり、かつ居住者がいる場合は確認ダイアログを表示
+    if (existing && hasResident) {
+      setConfirmingId(chargeTypeId)
+      return
+    }
+    executeSave(chargeTypeId)
+  }
+
+  function executeSave(chargeTypeId: string) {
+    setConfirmingId(null)
     if (!notApplicable) {
       const amountNum = parseFloat(amount)
       if (isNaN(amountNum) || amountNum <= 0) {
@@ -79,6 +92,28 @@ export function UnitChargesForm({ unitId, chargeTypes, currentCharges }: UnitCha
     <div className="space-y-1">
       {error && (
         <p className="mb-2 text-sm text-red-600 bg-red-50 rounded px-3 py-2">{error}</p>
+      )}
+      {confirmingId && (
+        <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
+          <p className="font-medium text-amber-800 mb-2">
+            変更すると、住民の確認が得られるまで自動入金確認の対象外となります。本当に変更を保存しますか？
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => executeSave(confirmingId)}
+              disabled={isPending}
+              className="rounded bg-amber-600 px-3 py-1 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+            >
+              保存する
+            </button>
+            <button
+              onClick={() => setConfirmingId(null)}
+              className="rounded border border-amber-300 px-3 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100"
+            >
+              キャンセル
+            </button>
+          </div>
+        </div>
       )}
       {chargeTypes.map((ct) => {
         const isOptional = !REQUIRED_TYPE_ENUMS.includes(ct.type)

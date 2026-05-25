@@ -14,9 +14,12 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next({ request: { headers: request.headers } })
   }
 
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-pathname', pathname)
+
   const response = NextResponse.next({
     request: {
-      headers: request.headers,
+      headers: requestHeaders,
     },
   })
 

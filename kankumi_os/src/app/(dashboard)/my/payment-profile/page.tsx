@@ -29,7 +29,7 @@ export default async function MyPaymentProfilePage() {
   const { data: profile } = ownerRow
     ? await supabase
         .from('payment_profiles')
-        .select('transfer_name, bank_name, account_last4, effective_from')
+        .select('transfer_name, bank_name, effective_from')
         .eq('unit_id', ownerRow.unit_id)
         .eq('organization_id', membership.organization_id)
         .eq('source', 'user')
@@ -58,10 +58,6 @@ export default async function MyPaymentProfilePage() {
                 <div className="flex justify-between">
                   <dt className="text-gray-500">銀行名</dt>
                   <dd className="font-medium text-gray-900">{profile.bank_name}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-gray-500">口座下4桁</dt>
-                  <dd className="font-medium text-gray-900">{profile.account_last4}</dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-gray-500">登録日</dt>
