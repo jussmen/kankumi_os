@@ -2,9 +2,17 @@
 
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/types/database'
+
+async function getCallbackUrl() {
+  const h = await headers()
+  const host = h.get('host') ?? 'kankumiapp.jp'
+  const proto = host.startsWith('localhost') ? 'http' : 'https'
+  return `${proto}://${host}/auth/callback`
+}
 
 type MemberRole = Database['public']['Enums']['member_role']
 
@@ -110,9 +118,10 @@ export async function inviteMember(
   }
 
   // 新規ユーザーへの招待
+  const callbackUrl = await getCallbackUrl()
   const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
     email,
-    { data: { organization_id: orgId } }
+    { data: { organization_id: orgId }, redirectTo: callbackUrl }
   )
 
   if (inviteError) {
@@ -254,8 +263,10 @@ export async function resendInvite(memberId: string): Promise<string | null> {
   const email = authUserData.user?.email
   if (!email) return 'メールアドレスが見つかりません。'
 
+  const callbackUrl = await getCallbackUrl()
   const { error } = await adminClient.auth.admin.inviteUserByEmail(email, {
     data: { organization_id: orgId },
+    redirectTo: callbackUrl,
   })
 
   if (error) return `メールの再送に失敗しました: ${error.message}`
