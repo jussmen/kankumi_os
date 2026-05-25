@@ -24,36 +24,28 @@ interface RoleSelectProps {
   memberId: string
   currentRole: MemberRole
   availableUnits: Unit[]
-  currentUnitNumber?: string  // 住民→他ロール変更時の確認表示用
+  hasUnit: boolean  // すでに部屋が登録されているか
 }
 
-export function RoleSelect({ memberId, currentRole, availableUnits, currentUnitNumber }: RoleSelectProps) {
+export function RoleSelect({ memberId, currentRole, availableUnits, hasUnit }: RoleSelectProps) {
   const [isPending, startTransition] = useTransition()
   const [selectedRole, setSelectedRole] = useState<MemberRole>(currentRole)
   const [selectedUnitId, setSelectedUnitId] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  const pendingResident = selectedRole === 'resident' && currentRole !== 'resident'
+  // 住民に変更しようとしていて、かつ部屋がまだ未登録の場合のみ部屋選択を表示
+  const needsUnitSelect = selectedRole === 'resident' && !hasUnit
 
   function handleRoleChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const role = e.target.value as MemberRole
     setError(null)
     setSelectedUnitId('')
-
-    // 住民への変更は部屋選択待ち（まだ実行しない）
-    if (role === 'resident') {
-      setSelectedRole(role)
-      return
-    }
-
-    // 住民→別ロール：部屋登録解除の確認
-    if (currentRole === 'resident') {
-      const label = ROLE_LABELS[role]
-      const unitInfo = currentUnitNumber ? `（${currentUnitNumber}）` : ''
-      if (!window.confirm(`部屋登録${unitInfo}を解除して「${label}」に変更しますか？`)) return
-    }
-
     setSelectedRole(role)
+
+    // 部屋選択が必要な場合は確定ボタン待ち
+    if (role === 'resident' && !hasUnit) return
+
+    // それ以外はすぐに実行（unit_owners には触れない）
     startTransition(async () => {
       const err = await updateMemberRole(memberId, role)
       if (err) {
@@ -99,7 +91,7 @@ export function RoleSelect({ memberId, currentRole, availableUnits, currentUnitN
         ))}
       </select>
 
-      {pendingResident && (
+      {needsUnitSelect && (
         <>
           <select
             value={selectedUnitId}

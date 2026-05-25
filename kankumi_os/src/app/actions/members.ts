@@ -176,12 +176,9 @@ export async function updateMemberRole(
 
   if (!member) return 'メンバーが見つかりません。'
 
-  const today = new Date().toISOString().slice(0, 10)
-
-  // 住民への変更：部屋番号必須・空き確認・unit_owners 作成
-  if (role === 'resident') {
-    if (!unitId) return '部屋番号を選択してください。'
-
+  // 住民への変更で部屋未登録の場合のみ unit_owners を作成する。
+  // ロール変更だけの場合（役員→住民など）は部屋登録をそのまま維持する。
+  if (role === 'resident' && unitId) {
     const { data: existing } = await adminClient
       .from('unit_owners')
       .select('id')
@@ -201,19 +198,9 @@ export async function updateMemberRole(
       name: email,
       email,
       owner_type: 'resident',
-      start_date: today,
+      start_date: new Date().toISOString().slice(0, 10),
     })
     if (insertError) return `部屋の登録に失敗しました: ${insertError.message}`
-  }
-
-  // 住民→別ロール：unit_owners を終了
-  if (member.role === 'resident' && role !== 'resident') {
-    await adminClient
-      .from('unit_owners')
-      .update({ end_date: today })
-      .eq('user_id', member.user_id)
-      .eq('organization_id', orgId)
-      .is('end_date', null)
   }
 
   const { error: updateError } = await adminClient

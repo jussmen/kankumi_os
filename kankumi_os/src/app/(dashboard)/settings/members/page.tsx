@@ -153,6 +153,7 @@ export default async function MembersPage() {
                             memberId={member.id}
                             currentRole={member.role as MemberRole}
                             availableUnits={availableUnits}
+                            hasUnit={userIdToUnitId.has(member.user_id)}
                           />
                           <RemoveMemberButton memberId={member.id} />
                         </>
@@ -199,7 +200,7 @@ export default async function MembersPage() {
                           memberId={member.id}
                           currentRole={member.role as MemberRole}
                           availableUnits={availableUnits}
-                          currentUnitNumber={unitNumber}
+                          hasUnit={userIdToUnitId.has(member.user_id)}
                         />
                         <RemoveMemberButton memberId={member.id} />
                       </div>
