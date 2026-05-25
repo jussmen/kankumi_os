@@ -63,16 +63,23 @@ export async function setPassword(
   const password = formData.get('password') as string
   const confirm = formData.get('confirm') as string
 
-  if (password.length < 8) return 'パスワードは8文字以上で設定してください。'
+  if (!password || password.length < 8) return 'パスワードは8文字以上で設定してください。'
   if (password !== confirm) return 'パスワードが一致しません。'
 
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return 'セッションが無効です。招待メールのリンクから再度アクセスしてください。'
+  if (!user?.email) return 'セッションが無効です。招待メールのリンクから再度アクセスしてください。'
 
-  const { error } = await supabase.auth.updateUser({ password })
-  if (error) return `パスワードの設定に失敗しました: ${error.message}`
+  const { error: updateError } = await supabase.auth.updateUser({ password })
+  if (updateError) return `パスワードの設定に失敗しました: ${updateError.message}`
+
+  // パスワード設定後、新しいパスワードで即座に再ログインしてセッションを確立
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password,
+  })
+  if (signInError) return `パスワードは設定されましたが、ログインに失敗しました: ${signInError.message}`
 
   revalidatePath('/dashboard')
   redirect('/dashboard')
