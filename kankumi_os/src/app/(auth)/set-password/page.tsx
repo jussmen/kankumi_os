@@ -1,39 +1,10 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { useActionState } from 'react'
+import { setPassword } from '@/app/actions/auth'
 
 export default function SetPasswordPage() {
-  const router = useRouter()
-  const [password, setPassword] = useState('')
-  const [confirm, setConfirm] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [isPending, startTransition] = useTransition()
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
-
-    if (password.length < 8) {
-      setError('パスワードは8文字以上で設定してください。')
-      return
-    }
-    if (password !== confirm) {
-      setError('パスワードが一致しません。')
-      return
-    }
-
-    startTransition(async () => {
-      const supabase = createClient()
-      const { error } = await supabase.auth.updateUser({ password })
-      if (error) {
-        setError('パスワードの設定に失敗しました。もう一度お試しください。')
-        return
-      }
-      router.push('/dashboard')
-    })
-  }
+  const [error, action, isPending] = useActionState(setPassword, null)
 
   return (
     <>
@@ -44,17 +15,16 @@ export default function SetPasswordPage() {
         次回以降のログインに使用するパスワードを設定してください。
       </p>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form action={action} className="space-y-5">
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
             パスワード <span className="text-red-500">*</span>
           </label>
           <input
             id="password"
+            name="password"
             type="password"
             required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
             placeholder="8文字以上"
             autoComplete="new-password"
             className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -67,10 +37,9 @@ export default function SetPasswordPage() {
           </label>
           <input
             id="confirm"
+            name="confirm"
             type="password"
             required
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
             placeholder="もう一度入力"
             autoComplete="new-password"
             className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -91,7 +60,6 @@ export default function SetPasswordPage() {
           {isPending ? '設定中...' : 'パスワードを設定してはじめる'}
         </button>
       </form>
-
     </>
   )
 }
