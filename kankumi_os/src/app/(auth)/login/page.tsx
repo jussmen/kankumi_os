@@ -72,13 +72,8 @@ export default function LoginPage() {
         </Link>
       </p>
 
-      <p className="mt-3 text-center text-sm text-gray-600">
-        <Link
-          href="/signup"
-          className="font-medium text-blue-600 hover:text-blue-500"
-        >
-          アカウントをお持ちでない方はこちら
-        </Link>
+      <p className="mt-3 text-center text-sm text-gray-500">
+        アカウントは管理者からの招待メールで作成できます。
       </p>
     </>
   )

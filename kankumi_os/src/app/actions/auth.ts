@@ -26,7 +26,7 @@ export async function signUp(
   formData: FormData
 ): Promise<string | null> {
   const email = formData.get('email') as string
-  const password = formData.get('confirmPassword') as string
+  const password = formData.get('password') as string
   const confirmPassword = formData.get('confirmPassword') as string
 
   if (password !== confirmPassword) {
