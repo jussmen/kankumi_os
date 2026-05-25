@@ -1,6 +1,7 @@
+import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Database } from '@/types/database'
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
@@ -8,13 +9,34 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get('type')
 
   if (code) {
-    const supabase = await createClient()
+    // レスポンスを先に生成し、クッキーをこのオブジェクトに直接セット
+    const response = NextResponse.redirect(`${origin}/dashboard`)
+
+    const supabase = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              request.cookies.set(name, value)
+              response.cookies.set(name, value, options)
+            })
+          },
+        },
+      }
+    )
+
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error) {
-      // パスワードリセットフローは設定画面へ
+      // パスワードリセットフロー
       if (type === 'recovery') {
-        return NextResponse.redirect(`${origin}/set-password`)
+        response.headers.set('Location', `${origin}/set-password`)
+        return response
       }
 
       const {
@@ -38,13 +60,14 @@ export async function GET(request: NextRequest) {
             .is('user_id', null)
         }
 
-        // 招待経由ユーザー（inviteUserByEmail で作成）はパスワード設定画面へ
+        // 招待経由ユーザーはパスワード設定画面へ
         if (user.invited_at) {
-          return NextResponse.redirect(`${origin}/set-password`)
+          response.headers.set('Location', `${origin}/set-password`)
+          return response
         }
       }
 
-      return NextResponse.redirect(`${origin}/dashboard`)
+      return response // /dashboard へ
     }
   }
 
