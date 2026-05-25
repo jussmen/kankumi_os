@@ -64,6 +64,16 @@ export async function GET(request: NextRequest) {
 
   // リダイレクト先が確定してからレスポンスを生成し、クッキーをセット
   const response = NextResponse.redirect(`${origin}${redirectPath}`)
+
+  // 古いセッション Cookie（削除済みユーザーのチャンク含む）をすべて消去してから
+  // 新しいセッション Cookie を設定する。これにより @supabase/ssr が
+  // 古いチャンクを誤って読み込む問題を防ぐ。
+  for (const cookie of request.cookies.getAll()) {
+    if (cookie.name.startsWith('sb-') && cookie.name.includes('auth-token')) {
+      response.cookies.delete(cookie.name)
+    }
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   pendingCookies.forEach(({ name, value, options }) => {
     response.cookies.set(name, value, options as any)

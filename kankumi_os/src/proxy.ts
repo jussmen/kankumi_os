@@ -3,6 +3,17 @@ import type { NextRequest } from 'next/server'
 import { createMiddlewareClient } from '@/lib/supabase/middleware'
 
 export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // Auth フロー系ルートは自前でセッション Cookie を管理するため、
+  // ミドルウェアの getUser() を実行しない。
+  // getUser() が古い JWT チャンクで 403 を返すと @supabase/ssr が
+  // 全セッション Cookie を消去し、callback/set-password が設定した
+  // 新しい Cookie まで上書きしてしまう。
+  if (pathname.startsWith('/auth/') || pathname === '/set-password') {
+    return NextResponse.next({ request: { headers: request.headers } })
+  }
+
   const response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -15,8 +26,6 @@ export async function proxy(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  const { pathname } = request.nextUrl
 
   // 認証が必要なルートへの未認証アクセスを /login にリダイレクト
   if (
