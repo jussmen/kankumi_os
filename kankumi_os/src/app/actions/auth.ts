@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function signIn(
   _prevState: string | null,
@@ -74,7 +75,23 @@ export async function setPassword(
   const { error: updateError } = await supabase.auth.updateUser({ password })
   if (updateError) return `パスワードの設定に失敗しました: ${updateError.message}`
 
-  // パスワード設定後、新しいパスワードで即座に再ログインしてセッションを確立
+  // 招待フローは /auth/callback を経由しないため、ここで組織メンバーを有効化する。
+  // パスワードリセットフロー（すでに active）でも実行するが no-op になるだけで無害。
+  const adminClient = createAdminClient()
+  await adminClient
+    .from('organization_members')
+    .update({ is_active: true })
+    .eq('user_id', user.id)
+    .eq('is_active', false)
+
+  // unit_owners にメールアドレスで紐付けられているレコードに user_id をセット
+  await adminClient
+    .from('unit_owners')
+    .update({ user_id: user.id })
+    .eq('email', user.email)
+    .is('user_id', null)
+
+  // パスワード設定後、新しいパスワードで再ログインしてセッションを確立
   const { error: signInError } = await supabase.auth.signInWithPassword({
     email: user.email,
     password,
