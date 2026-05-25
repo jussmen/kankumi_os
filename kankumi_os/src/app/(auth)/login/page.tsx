@@ -12,35 +12,38 @@ export default function LoginPage() {
   const [redirecting, setRedirecting] = useState(false)
 
   useEffect(() => {
-    // Implicit Flow: invite/recovery メールのリンクは #access_token= の形で着地する
+    // Implicit Flow: invite/recovery リンクは #access_token= の形で着地する
     const hash = window.location.hash
     if (!hash.includes('access_token=')) return
 
     const params = new URLSearchParams(hash.slice(1))
-    const type = params.get('type') // 'invite' | 'recovery' | null
+    const accessToken = params.get('access_token')
+    const refreshToken = params.get('refresh_token')
+    const type = params.get('type') // 'invite' | 'recovery' | 'magiclink' | null
+
+    if (!accessToken || !refreshToken) return
 
     setRedirecting(true)
     const supabase = createClient()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        subscription.unsubscribe()
+    supabase.auth
+      .setSession({ access_token: accessToken, refresh_token: refreshToken })
+      .then(({ error: sessionError }) => {
+        if (sessionError) {
+          setRedirecting(false)
+          return
+        }
         if (type === 'invite' || type === 'recovery') {
           router.replace('/set-password')
         } else {
           router.replace('/dashboard')
         }
-      }
-    })
-
-    return () => subscription.unsubscribe()
+      })
   }, [router])
 
   if (redirecting) {
     return (
-      <p className="text-center text-sm text-gray-500 py-8">
-        処理中...
-      </p>
+      <p className="text-center text-sm text-gray-500 py-8">処理中...</p>
     )
   }
 
