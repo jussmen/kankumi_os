@@ -26,18 +26,46 @@ export default async function UnitsPage({ searchParams }: PageProps) {
 
   const { orgId, role } = { orgId: membership.organization_id, role: membership.role }
   const canEdit = ['admin', 'vice_president', 'treasurer'].includes(role)
+  const isResident = role === 'resident'
 
   const REQUIRED_TYPE_ENUMS = ['management_fee', 'reserve_fund']
+
+  // 住民ロールは自分の部屋のみ表示
+  let myUnitId: string | null = null
+  if (isResident) {
+    const { data: myUnit } = await supabase
+      .from('unit_owners')
+      .select('unit_id')
+      .eq('organization_id', orgId)
+      .eq('user_id', user.id)
+      .is('end_date', null)
+      .single()
+    myUnitId = myUnit?.unit_id ?? null
+  }
+
+  const unitsQuery = supabase
+    .from('units')
+    .select('id, unit_number, occupancy_status', { count: 'exact' })
+    .eq('organization_id', orgId)
+    .order('unit_number')
+
+  if (isResident && myUnitId) {
+    unitsQuery.eq('id', myUnitId)
+  } else if (isResident && !myUnitId) {
+    // 部屋未登録の住民は空リストを返す
+    return (
+      <div className="px-6 py-8">
+        <h1 className="text-2xl font-bold text-gray-800 mb-2">住民台帳</h1>
+        <p className="text-sm text-gray-500">部屋が登録されていません。管理者にお問い合わせください。</p>
+      </div>
+    )
+  }
 
   const [
     { data: units, count },
     { data: orgChargeTypes },
   ] = await Promise.all([
-    supabase
-      .from('units')
-      .select('id, unit_number, occupancy_status', { count: 'exact' })
-      .eq('organization_id', orgId)
-      .order('unit_number'),
+    unitsQuery,
     supabase
       .from('charge_types')
       .select('id, type')
@@ -91,7 +119,9 @@ export default async function UnitsPage({ searchParams }: PageProps) {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">住民台帳</h1>
-          <p className="text-sm text-gray-500 mt-0.5">全{count ?? 0}戸</p>
+          {!isResident && (
+            <p className="text-sm text-gray-500 mt-0.5">全{count ?? 0}戸</p>
+          )}
         </div>
         {canEdit && (
           <div className="flex gap-2">
