@@ -149,7 +149,11 @@ export default async function MembersPage() {
                     <div className="flex items-center gap-2 shrink-0">
                       {member.user_id !== user.id ? (
                         <>
-                          <RoleSelect memberId={member.id} currentRole={member.role} />
+                          <RoleSelect
+                            memberId={member.id}
+                            currentRole={member.role as MemberRole}
+                            availableUnits={availableUnits}
+                          />
                           <RemoveMemberButton memberId={member.id} />
                         </>
                       ) : (
@@ -191,7 +195,12 @@ export default async function MembersPage() {
                         )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <RoleSelect memberId={member.id} currentRole={member.role} />
+                        <RoleSelect
+                          memberId={member.id}
+                          currentRole={member.role as MemberRole}
+                          availableUnits={availableUnits}
+                          currentUnitNumber={unitNumber}
+                        />
                         <RemoveMemberButton memberId={member.id} />
                       </div>
                     </div>

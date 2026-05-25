@@ -159,16 +159,73 @@ export async function inviteMember(
   return null
 }
 
-export async function updateMemberRole(memberId: string, role: MemberRole): Promise<void> {
-  const { supabase, orgId } = await getContext()
+export async function updateMemberRole(
+  memberId: string,
+  role: MemberRole,
+  unitId?: string
+): Promise<string | null> {
+  const { orgId } = await getContext()
+  const adminClient = createAdminClient()
 
-  await supabase
+  const { data: member } = await adminClient
+    .from('organization_members')
+    .select('user_id, role')
+    .eq('id', memberId)
+    .eq('organization_id', orgId)
+    .single()
+
+  if (!member) return 'メンバーが見つかりません。'
+
+  const today = new Date().toISOString().slice(0, 10)
+
+  // 住民への変更：部屋番号必須・空き確認・unit_owners 作成
+  if (role === 'resident') {
+    if (!unitId) return '部屋番号を選択してください。'
+
+    const { data: existing } = await adminClient
+      .from('unit_owners')
+      .select('id')
+      .eq('organization_id', orgId)
+      .eq('unit_id', unitId)
+      .is('end_date', null)
+
+    if (existing && existing.length > 0) return 'この部屋はすでに使用中です。'
+
+    const { data: authUser } = await adminClient.auth.admin.getUserById(member.user_id)
+    const email = authUser.user?.email ?? ''
+
+    const { error: insertError } = await adminClient.from('unit_owners').insert({
+      organization_id: orgId,
+      unit_id: unitId,
+      user_id: member.user_id,
+      name: email,
+      email,
+      owner_type: 'resident',
+      start_date: today,
+    })
+    if (insertError) return `部屋の登録に失敗しました: ${insertError.message}`
+  }
+
+  // 住民→別ロール：unit_owners を終了
+  if (member.role === 'resident' && role !== 'resident') {
+    await adminClient
+      .from('unit_owners')
+      .update({ end_date: today })
+      .eq('user_id', member.user_id)
+      .eq('organization_id', orgId)
+      .is('end_date', null)
+  }
+
+  const { error: updateError } = await adminClient
     .from('organization_members')
     .update({ role })
     .eq('id', memberId)
     .eq('organization_id', orgId)
 
+  if (updateError) return `ロールの変更に失敗しました: ${updateError.message}`
+
   revalidatePath('/settings/members')
+  return null
 }
 
 export async function removeMember(memberId: string): Promise<void> {
