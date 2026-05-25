@@ -38,11 +38,8 @@ export async function GET(request: NextRequest) {
             .is('user_id', null)
         }
 
-        // 招待経由（パスワード未設定）のユーザーはパスワード設定画面へ
-        const isInvited = !user.last_sign_in_at ||
-          user.last_sign_in_at === user.created_at
-
-        if (isInvited) {
+        // 招待経由ユーザー（inviteUserByEmail で作成）はパスワード設定画面へ
+        if (user.invited_at) {
           return NextResponse.redirect(`${origin}/set-password`)
         }
       }
