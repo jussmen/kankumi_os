@@ -56,7 +56,7 @@ export default async function BudgetPage({ searchParams }: PageProps) {
   const activeFyId = fiscal_year_id ?? fiscalYears[0].id
   const activeFy = fiscalYears.find((fy) => fy.id === activeFyId) ?? fiscalYears[0]
 
-  const [{ data: categories }, { data: budgets }, { data: expenses }] = await Promise.all([
+  const [{ data: categories }, { data: budgets }, { data: expenses }, { data: contracts }] = await Promise.all([
     supabase
       .from('expense_categories')
       .select('id, name, account_type')
@@ -73,6 +73,12 @@ export default async function BudgetPage({ searchParams }: PageProps) {
       .select('category_id, amount')
       .eq('organization_id', orgId)
       .eq('fiscal_year_id', activeFy.id),
+    supabase
+      .from('vendor_contracts')
+      .select('id, service_description, cost_amount, cost_cycle, vendors(name)')
+      .eq('organization_id', orgId)
+      .eq('is_active', true)
+      .order('created_at'),
   ])
 
   const budgetMap = new Map<string, number>(
@@ -122,6 +128,50 @@ export default async function BudgetPage({ searchParams }: PageProps) {
         accountTypeLabels={ACCOUNT_TYPE_LABELS}
         canEdit={canEdit}
       />
+
+      {(contracts ?? []).length > 0 && (
+        <div className="mt-6 bg-white rounded-lg border border-gray-200 overflow-hidden max-w-2xl">
+          <div className="px-4 py-3 border-b border-gray-100">
+            <h2 className="text-sm font-semibold text-gray-700">参考：業者契約費用</h2>
+            <p className="text-xs text-gray-400 mt-0.5">予算入力の参考として — 自動反映はされません</p>
+          </div>
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 text-xs text-gray-500 border-b border-gray-100">
+              <tr>
+                <th className="px-4 py-2 text-left font-medium">業者名</th>
+                <th className="px-3 py-2 text-left font-medium">サービス</th>
+                <th className="px-3 py-2 text-right font-medium">費用</th>
+                <th className="px-3 py-2 text-left font-medium">サイクル</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {(contracts ?? []).map((c) => {
+                const vendor = Array.isArray(c.vendors) ? c.vendors[0] : c.vendors
+                const cycleLabel = c.cost_cycle === 'monthly' ? '月額' : c.cost_cycle === 'annual' ? '年額' : c.cost_cycle ?? ''
+                return (
+                  <tr key={c.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-2 text-gray-700">{vendor?.name ?? '—'}</td>
+                    <td className="px-3 py-2 text-gray-500 text-xs">{c.service_description ?? '—'}</td>
+                    <td className="px-3 py-2 text-right text-gray-700 font-medium tabular-nums">
+                      {c.cost_amount ? `¥${Number(c.cost_amount).toLocaleString('ja-JP')}` : '—'}
+                    </td>
+                    <td className="px-3 py-2 text-gray-500 text-xs">{cycleLabel}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+          <div className="px-4 py-2 border-t border-gray-100 text-right">
+            <span className="text-xs text-gray-500">
+              年額合計目安: ¥{(contracts ?? []).reduce((s, c) => {
+                if (!c.cost_amount) return s
+                const amt = Number(c.cost_amount)
+                return s + (c.cost_cycle === 'monthly' ? amt * 12 : amt)
+              }, 0).toLocaleString('ja-JP')}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

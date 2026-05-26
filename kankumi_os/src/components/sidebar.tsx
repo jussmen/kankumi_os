@@ -82,8 +82,13 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: '設定',
+    label: '引継・設定',
     items: [
+      {
+        label: '理事向け引継書',
+        href: '/handover',
+        roles: ['admin', 'vice_president', 'treasurer', 'board_member'],
+      },
       {
         label: '組合設定',
         href: '/settings',

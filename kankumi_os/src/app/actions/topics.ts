@@ -94,17 +94,12 @@ export async function updateTopic(
 
 export async function updateTopicStatus(
   id: string,
-  status: TopicStatus,
-  resolution?: string
+  status: TopicStatus
 ): Promise<void> {
   const { supabase, orgId } = await getContext()
   await supabase
     .from('topics')
-    .update({
-      status,
-      ...(resolution !== undefined ? { resolution: resolution || null } : {}),
-      updated_at: new Date().toISOString(),
-    })
+    .update({ status, updated_at: new Date().toISOString() })
     .eq('id', id)
     .eq('organization_id', orgId)
   revalidatePath(`/topics/${id}`)
