@@ -6,6 +6,7 @@ import { updateTopic, updateTopicStatus, togglePin } from '@/app/actions/topics'
 import { updateTaskStatus } from '@/app/actions/tasks'
 import { TopicForm } from '@/components/topics/topic-form'
 import { CommentThread } from '@/components/topics/comment-thread'
+import { ResolveTopicForm } from '@/components/topics/resolve-topic-form'
 import type { Database } from '@/types/database'
 
 type TopicStatus = Database['public']['Enums']['topic_status']
@@ -189,8 +190,8 @@ export default async function TopicDetailPage({ params, searchParams }: PageProp
 
             {/* ステータス変更 */}
             {canEdit(role) && (
-              <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2">
-                {(['open', 'in_progress', 'resolved', 'closed'] as TopicStatus[]).map((s) => (
+              <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2 items-start">
+                {(['open', 'in_progress'] as TopicStatus[]).map((s) => (
                   <form key={s} action={updateTopicStatus.bind(null, id, s)}>
                     <button
                       type="submit"
@@ -205,6 +206,26 @@ export default async function TopicDetailPage({ params, searchParams }: PageProp
                     </button>
                   </form>
                 ))}
+                <ResolveTopicForm
+                  topicId={id}
+                  currentStatus={topic.status}
+                  targetStatus="resolved"
+                  label={STATUS_STYLES.resolved.label}
+                />
+                <ResolveTopicForm
+                  topicId={id}
+                  currentStatus={topic.status}
+                  targetStatus="closed"
+                  label={STATUS_STYLES.closed.label}
+                />
+              </div>
+            )}
+
+            {/* 決定内容 */}
+            {topic.resolution && (
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <p className="text-xs font-medium text-gray-500 mb-1">決定内容</p>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{topic.resolution}</p>
               </div>
             )}
           </div>

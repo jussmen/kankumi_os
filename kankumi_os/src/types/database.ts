@@ -1050,6 +1050,7 @@ export type Database = {
           organization_id: string
           pinned_at: string | null
           priority: Database["public"]["Enums"]["priority"]
+          resolution: string | null
           status: Database["public"]["Enums"]["topic_status"]
           title: string
           type: Database["public"]["Enums"]["topic_type"]
@@ -1065,6 +1066,7 @@ export type Database = {
           organization_id: string
           pinned_at?: string | null
           priority?: Database["public"]["Enums"]["priority"]
+          resolution?: string | null
           status?: Database["public"]["Enums"]["topic_status"]
           title: string
           type?: Database["public"]["Enums"]["topic_type"]
@@ -1080,6 +1082,7 @@ export type Database = {
           organization_id?: string
           pinned_at?: string | null
           priority?: Database["public"]["Enums"]["priority"]
+          resolution?: string | null
           status?: Database["public"]["Enums"]["topic_status"]
           title?: string
           type?: Database["public"]["Enums"]["topic_type"]
