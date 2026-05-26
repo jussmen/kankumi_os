@@ -45,6 +45,7 @@ interface TopicFormProps {
     priority?: Priority
     visibility?: Visibility
     due_date?: string | null
+    resolution?: string | null
   }
   showStatus?: boolean
   submitLabel?: string
@@ -158,6 +159,21 @@ export function TopicForm({
           />
         </div>
       </div>
+
+      {showStatus && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            決定内容・理由（任意）
+          </label>
+          <textarea
+            name="resolution"
+            rows={4}
+            defaultValue={defaultValues?.resolution ?? ''}
+            placeholder="解決済み・クローズ時の決定内容や理由"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+          />
+        </div>
+      )}
 
       <div className="flex gap-3 pt-2">
         <button

@@ -79,6 +79,7 @@ export async function updateTopic(
       priority: formData.get('priority') as Priority,
       visibility: formData.get('visibility') as Visibility,
       due_date: (formData.get('due_date') as string) || null,
+      resolution: (formData.get('resolution') as string) || null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
@@ -91,15 +92,44 @@ export async function updateTopic(
   redirect(`/topics/${id}`)
 }
 
-export async function updateTopicStatus(id: string, status: TopicStatus): Promise<void> {
+export async function updateTopicStatus(
+  id: string,
+  status: TopicStatus,
+  resolution?: string
+): Promise<void> {
   const { supabase, orgId } = await getContext()
   await supabase
     .from('topics')
-    .update({ status, updated_at: new Date().toISOString() })
+    .update({
+      status,
+      ...(resolution !== undefined ? { resolution: resolution || null } : {}),
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', id)
     .eq('organization_id', orgId)
   revalidatePath(`/topics/${id}`)
   revalidatePath('/topics')
+}
+
+export async function resolveTopicWithNote(
+  id: string,
+  resolution: string,
+  targetStatus: 'resolved' | 'closed' = 'resolved'
+): Promise<{ error: string | null }> {
+  const { supabase, orgId } = await getContext()
+  const { error } = await supabase
+    .from('topics')
+    .update({
+      status: targetStatus,
+      resolution: resolution || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .eq('organization_id', orgId)
+  if (error) return { error: '更新に失敗しました。もう一度お試しください。' }
+  revalidatePath(`/topics/${id}`)
+  revalidatePath('/topics')
+  return { error: null }
 }
 
 export async function togglePin(id: string, pinned: boolean): Promise<void> {
