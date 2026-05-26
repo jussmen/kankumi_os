@@ -91,13 +91,7 @@ export async function setPassword(
     .eq('email', user.email)
     .is('user_id', null)
 
-  // パスワード設定後、新しいパスワードで再ログインしてセッションを確立
-  const { error: signInError } = await supabase.auth.signInWithPassword({
-    email: user.email,
-    password,
-  })
-  if (signInError) return `パスワードは設定されましたが、ログインに失敗しました: ${signInError.message}`
-
+  // updateUser 後はセッションがそのまま有効なため、再ログイン不要
   revalidatePath('/dashboard')
   redirect('/dashboard')
 }
