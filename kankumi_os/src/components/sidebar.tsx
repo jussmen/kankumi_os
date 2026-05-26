@@ -29,7 +29,6 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: '日常業務',
     items: [
       {
         label: '住民台帳',
