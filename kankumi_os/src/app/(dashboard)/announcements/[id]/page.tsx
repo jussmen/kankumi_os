@@ -8,6 +8,7 @@ import {
   deleteAnnouncement,
 } from '@/app/actions/announcements'
 import { AnnouncementForm } from '@/components/announcements/announcement-form'
+import { DeleteAnnouncementButton } from '@/components/announcements/delete-announcement-button'
 import type { Database } from '@/types/database'
 
 type MemberRole = Database['public']['Enums']['member_role']
@@ -164,17 +165,7 @@ export default async function AnnouncementDetailPage({ params, searchParams }: P
                     </button>
                   </form>
                 )}
-                <form action={deleteAnnouncement.bind(null, id)}>
-                  <button
-                    type="submit"
-                    className="rounded-full px-3 py-1 text-xs font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
-                    onClick={(e) => {
-                      if (!confirm('このお知らせを削除しますか？')) e.preventDefault()
-                    }}
-                  >
-                    削除
-                  </button>
-                </form>
+                <DeleteAnnouncementButton action={deleteAnnouncement.bind(null, id)} />
               </div>
             )}
           </div>

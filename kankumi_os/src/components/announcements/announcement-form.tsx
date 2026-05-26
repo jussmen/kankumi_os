@@ -28,6 +28,13 @@ function toDatetimeLocal(iso: string | null | undefined): string {
   return iso.slice(0, 16)
 }
 
+function nowDatetimeLocal(): string {
+  const now = new Date()
+  now.setSeconds(0, 0)
+  const offset = now.getTimezoneOffset() * 60000
+  return new Date(now.getTime() - offset).toISOString().slice(0, 16)
+}
+
 export function AnnouncementForm({
   action,
   defaultValues,
@@ -88,9 +95,13 @@ export function AnnouncementForm({
           <input
             name="published_at"
             type="datetime-local"
-            defaultValue={toDatetimeLocal(defaultValues?.published_at)}
+            defaultValue={
+              toDatetimeLocal(defaultValues?.published_at) ||
+              (defaultValues === undefined ? nowDatetimeLocal() : '')
+            }
             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+          <p className="mt-1 text-xs text-gray-400">空欄にすると下書きとして保存されます</p>
         </div>
 
         <div>
