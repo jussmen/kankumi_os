@@ -79,7 +79,6 @@ export default async function TopicDetailPage({ params, searchParams }: PageProp
     .eq('organization_id', orgId)
     .order('created_at', { ascending: true })
 
-  // コメント＋著者のメールアドレスを取得
   const { data: rawComments } = await supabase
     .from('comments')
     .select('id, body, created_at, updated_at, author_id')
@@ -87,27 +86,31 @@ export default async function TopicDetailPage({ params, searchParams }: PageProp
     .eq('organization_id', orgId)
     .order('created_at', { ascending: true })
 
-  // 著者のメールアドレスをuser_idで引く
   const authorIds = [...new Set((rawComments ?? []).map((c) => c.author_id))]
-  const { data: members } = authorIds.length
+  const { data: ownerProfiles } = authorIds.length
     ? await supabase
-        .from('organization_members')
-        .select('user_id')
+        .from('unit_owners')
+        .select('user_id, name, units(unit_number)')
         .in('user_id', authorIds)
-        .eq('organization_id', orgId)
-    : { data: [] }
+        .is('end_date', null)
+    : { data: [] as { user_id: string; name: string; units: { unit_number: string } | null }[] }
 
-  // auth.usersは直接クエリ不可なので、member emailをprofile経由で取得できないため
-  // 暫定：author_idをそのまま短縮表示、将来profiles実装後に差し替え
-  const authorEmailMap = new Map(
-    (members ?? []).map((m) => [m.user_id, `ユーザー(${m.user_id.slice(0, 6)})`])
-  )
-  // 自分だけemail表示
-  authorEmailMap.set(user.id, user.email ?? user.id)
+  const authorDisplayMap = new Map<string, string>()
+  for (const op of ownerProfiles ?? []) {
+    if (!op.user_id) continue
+    const unit = Array.isArray(op.units) ? op.units[0] : op.units
+    authorDisplayMap.set(
+      op.user_id,
+      unit?.unit_number ? `${op.name}（${unit.unit_number}）` : op.name
+    )
+  }
+  if (!authorDisplayMap.has(user.id)) {
+    authorDisplayMap.set(user.id, user.email ?? user.id)
+  }
 
   const comments = (rawComments ?? []).map((c) => ({
     ...c,
-    author_email: authorEmailMap.get(c.author_id) ?? c.author_id.slice(0, 8),
+    author_display: authorDisplayMap.get(c.author_id) ?? `ユーザー(${c.author_id.slice(0, 6)})`,
   }))
 
   const isEditing = edit === '1' && canEdit(role)

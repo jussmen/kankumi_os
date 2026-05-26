@@ -9,7 +9,7 @@ interface Comment {
   created_at: string
   updated_at: string
   author_id: string
-  author_email: string
+  author_display: string
 }
 
 interface CommentThreadProps {
@@ -99,7 +99,7 @@ function CommentItem({
     })
   }
 
-  const initials = comment.author_email.charAt(0).toUpperCase()
+  const initials = comment.author_display.charAt(0).toUpperCase()
   const dateStr = new Date(comment.created_at).toLocaleDateString('ja-JP', {
     month: 'short',
     day: 'numeric',
@@ -114,7 +114,7 @@ function CommentItem({
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-xs font-medium text-gray-700">{comment.author_email}</span>
+          <span className="text-xs font-medium text-gray-700">{comment.author_display}</span>
           <span className="text-xs text-gray-400">{dateStr}</span>
           {comment.updated_at !== comment.created_at && (
             <span className="text-xs text-gray-400">（編集済み）</span>
