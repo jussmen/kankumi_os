@@ -89,6 +89,11 @@ const NAV_GROUPS: NavGroup[] = [
         href: '/settings',
         roles: ['admin'],
       },
+      {
+        label: '業者管理',
+        href: '/settings/vendors',
+        roles: ['admin', 'vice_president'],
+      },
     ],
   },
 ]
