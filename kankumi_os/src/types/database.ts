@@ -71,6 +71,7 @@ export type Database = {
           status: string
           template_id: string | null
           title: string
+          vendor_contract_id: string | null
         }
         Insert: {
           assignee_id?: string | null
@@ -84,6 +85,7 @@ export type Database = {
           status?: string
           template_id?: string | null
           title: string
+          vendor_contract_id?: string | null
         }
         Update: {
           assignee_id?: string | null
@@ -97,6 +99,7 @@ export type Database = {
           status?: string
           template_id?: string | null
           title?: string
+          vendor_contract_id?: string | null
         }
         Relationships: [
           {
@@ -118,6 +121,13 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "checklist_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "annual_checklists_vendor_contract_id_fkey"
+            columns: ["vendor_contract_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_contracts"
             referencedColumns: ["id"]
           },
         ]
@@ -1050,6 +1060,7 @@ export type Database = {
           organization_id: string
           pinned_at: string | null
           priority: Database["public"]["Enums"]["priority"]
+          resolution: string | null
           status: Database["public"]["Enums"]["topic_status"]
           title: string
           type: Database["public"]["Enums"]["topic_type"]
@@ -1065,6 +1076,7 @@ export type Database = {
           organization_id: string
           pinned_at?: string | null
           priority?: Database["public"]["Enums"]["priority"]
+          resolution?: string | null
           status?: Database["public"]["Enums"]["topic_status"]
           title: string
           type?: Database["public"]["Enums"]["topic_type"]
@@ -1080,6 +1092,7 @@ export type Database = {
           organization_id?: string
           pinned_at?: string | null
           priority?: Database["public"]["Enums"]["priority"]
+          resolution?: string | null
           status?: Database["public"]["Enums"]["topic_status"]
           title?: string
           type?: Database["public"]["Enums"]["topic_type"]
@@ -1219,27 +1232,21 @@ export type Database = {
       }
       units: {
         Row: {
-          area_sqm: number | null
           created_at: string
-          floor: number | null
           id: string
           occupancy_status: Database["public"]["Enums"]["occupancy_status"]
           organization_id: string
           unit_number: string
         }
         Insert: {
-          area_sqm?: number | null
           created_at?: string
-          floor?: number | null
           id?: string
           occupancy_status?: Database["public"]["Enums"]["occupancy_status"]
           organization_id: string
           unit_number: string
         }
         Update: {
-          area_sqm?: number | null
           created_at?: string
-          floor?: number | null
           id?: string
           occupancy_status?: Database["public"]["Enums"]["occupancy_status"]
           organization_id?: string
@@ -1255,11 +1262,125 @@ export type Database = {
           },
         ]
       }
+      vendor_contracts: {
+        Row: {
+          auto_renewal: boolean
+          cost_amount: number | null
+          cost_cycle: string
+          created_at: string
+          end_date: string | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          organization_id: string
+          renewal_date: string | null
+          service_description: string
+          start_date: string | null
+          vendor_id: string
+        }
+        Insert: {
+          auto_renewal?: boolean
+          cost_amount?: number | null
+          cost_cycle?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          organization_id: string
+          renewal_date?: string | null
+          service_description: string
+          start_date?: string | null
+          vendor_id: string
+        }
+        Update: {
+          auto_renewal?: boolean
+          cost_amount?: number | null
+          cost_cycle?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          organization_id?: string
+          renewal_date?: string | null
+          service_description?: string
+          start_date?: string | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_contracts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_contracts_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendors: {
+        Row: {
+          category: Database["public"]["Enums"]["vendor_category"]
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          custom_category: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          organization_id: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["vendor_category"]
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          custom_category?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          organization_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["vendor_category"]
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          custom_category?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendors_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      can_board_write: { Args: { org_id: string }; Returns: boolean }
       is_board_or_above: { Args: { org_id: string }; Returns: boolean }
       my_organization_ids: { Args: never; Returns: string[] }
       my_role: {
@@ -1291,6 +1412,15 @@ export type Database = {
       topic_status: "open" | "in_progress" | "resolved" | "closed"
       topic_type: "board_meeting" | "general" | "issue" | "notice" | "task"
       transaction_status: "unmatched" | "matched" | "ignored"
+      vendor_category:
+        | "cleaning"
+        | "equipment_maintenance"
+        | "legal_inspection"
+        | "insurance"
+        | "landscaping"
+        | "renovation"
+        | "security"
+        | "other"
       visibility: "board_only" | "all_members"
     }
     CompositeTypes: {
@@ -1444,6 +1574,16 @@ export const Constants = {
       topic_status: ["open", "in_progress", "resolved", "closed"],
       topic_type: ["board_meeting", "general", "issue", "notice", "task"],
       transaction_status: ["unmatched", "matched", "ignored"],
+      vendor_category: [
+        "cleaning",
+        "equipment_maintenance",
+        "legal_inspection",
+        "insurance",
+        "landscaping",
+        "renovation",
+        "security",
+        "other",
+      ],
       visibility: ["board_only", "all_members"],
     },
   },
