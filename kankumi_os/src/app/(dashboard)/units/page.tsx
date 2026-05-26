@@ -45,7 +45,7 @@ export default async function UnitsPage({ searchParams }: PageProps) {
 
   const unitsQuery = supabase
     .from('units')
-    .select('id, unit_number, occupancy_status', { count: 'exact' })
+    .select('id, unit_number', { count: 'exact' })
     .eq('organization_id', orgId)
     .order('unit_number')
 

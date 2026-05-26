@@ -38,7 +38,6 @@ export async function createUnit(
   const { error } = await supabase.from('units').insert({
     organization_id: orgId,
     unit_number: unitNumber,
-    occupancy_status: (formData.get('occupancy_status') as OccupancyStatus) || 'occupied',
   })
 
   if (error) {
@@ -62,10 +61,7 @@ export async function updateUnit(
 
   const { error } = await supabase
     .from('units')
-    .update({
-      unit_number: unitNumber,
-      occupancy_status: formData.get('occupancy_status') as OccupancyStatus,
-    })
+    .update({ unit_number: unitNumber })
     .eq('id', id)
     .eq('organization_id', orgId)
 
@@ -77,19 +73,6 @@ export async function updateUnit(
   revalidatePath('/units')
   revalidatePath(`/units/${id}`)
   redirect(`/units/${id}`)
-}
-
-export async function updateOccupancyStatus(
-  id: string,
-  status: OccupancyStatus
-): Promise<void> {
-  const { supabase, orgId } = await getContext()
-  await supabase
-    .from('units')
-    .update({ occupancy_status: status })
-    .eq('id', id)
-    .eq('organization_id', orgId)
-  revalidatePath('/units')
 }
 
 export async function importUnits(
@@ -143,13 +126,26 @@ export async function upsertUnitCharge(
 
   if (error) return { error: '月額料金の設定に失敗しました。' }
 
-  // 料金変更で住民の確認を無効化
-  await supabase
+  revalidatePath(`/units/${unitId}`)
+  revalidatePath('/units')
+  return { error: null }
+}
+
+export async function moveOutResident(
+  unitId: string
+): Promise<{ error: string | null }> {
+  const { supabase, orgId } = await getContext()
+
+  const today = new Date().toISOString().slice(0, 10)
+
+  const { error } = await supabase
     .from('unit_owners')
-    .update({ charge_confirmed_at: null })
+    .update({ end_date: today })
     .eq('unit_id', unitId)
     .eq('organization_id', orgId)
     .is('end_date', null)
+
+  if (error) return { error: '住民の解除に失敗しました。' }
 
   revalidatePath(`/units/${unitId}`)
   revalidatePath('/units')

@@ -74,6 +74,16 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    label: 'マイページ',
+    items: [
+      {
+        label: 'マイプロフィール',
+        href: '/my/profile',
+        roles: ['resident'],
+      },
+    ],
+  },
+  {
     label: '設定',
     items: [
       {

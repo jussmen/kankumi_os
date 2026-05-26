@@ -1,22 +1,13 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { updateUnit, inviteResidentToUnit } from '@/app/actions/units'
+import { updateUnit, inviteResidentToUnit, moveOutResident } from '@/app/actions/units'
 import { adminSetPaymentProfile } from '@/app/actions/payment-profiles'
 import { UnitForm } from '@/components/units/unit-form'
 import { UnitChargesForm } from '@/components/units/unit-charges-form'
 import { UnitInviteForm } from '@/components/units/unit-invite-form'
+import { MoveOutButton } from '@/components/units/move-out-button'
 import { PaymentProfileForm } from '@/components/payment-profiles/payment-profile-form'
-import type { Database } from '@/types/database'
-
-type OccupancyStatus = Database['public']['Enums']['occupancy_status']
-
-const OCCUPANCY_STYLES: Record<OccupancyStatus, { label: string; className: string }> = {
-  occupied: { label: '居住中', className: 'bg-green-100 text-green-700' },
-  vacant: { label: '空室', className: 'bg-yellow-100 text-yellow-700' },
-  excluded: { label: '対象外', className: 'bg-gray-100 text-gray-500' },
-}
-
 const CHARGE_TYPE_LABELS: Record<string, string> = {
   management_fee: '管理費',
   reserve_fund: '修繕積立金',
@@ -57,11 +48,12 @@ export default async function UnitDetailPage({ params, searchParams }: PageProps
     { data: chargeTypes },
     { data: unitCharges },
     { data: profiles },
+    { data: profileHistory },
     { data: currentOwner },
   ] = await Promise.all([
     supabase
       .from('units')
-      .select('id, unit_number, occupancy_status')
+      .select('id, unit_number')
       .eq('id', id)
       .eq('organization_id', orgId)
       .single(),
@@ -86,6 +78,14 @@ export default async function UnitDetailPage({ params, searchParams }: PageProps
       .is('effective_to', null)
       .order('effective_from', { ascending: false }),
     supabase
+      .from('payment_profiles')
+      .select('id, source, transfer_name, bank_name, effective_from, effective_to')
+      .eq('unit_id', id)
+      .eq('organization_id', orgId)
+      .not('effective_to', 'is', null)
+      .order('effective_to', { ascending: false })
+      .limit(10),
+    supabase
       .from('unit_owners')
       .select('id, name, name_kana, email, user_id, charge_confirmed_at')
       .eq('unit_id', id)
@@ -99,9 +99,7 @@ export default async function UnitDetailPage({ params, searchParams }: PageProps
   const userProfile = (profiles ?? []).find((p) => p.source === 'user')
   const adminProfile = (profiles ?? []).find((p) => p.source === 'admin')
 
-  const occ = OCCUPANCY_STYLES[unit.occupancy_status]
   const isEditing = edit === '1' && canEdit
-  const hasResident = !!currentOwner?.user_id
   const isConfirmed = !!currentOwner?.charge_confirmed_at
 
   const updateUnitWithId = updateUnit.bind(null, id)
@@ -136,18 +134,10 @@ export default async function UnitDetailPage({ params, searchParams }: PageProps
             cancelHref={`/units/${id}`}
           />
         ) : (
-          <dl className="grid grid-cols-2 gap-4 text-sm">
+          <dl className="text-sm">
             <div>
               <dt className="text-gray-500">部屋番号</dt>
               <dd className="font-medium text-gray-900 mt-0.5">{unit.unit_number}</dd>
-            </div>
-            <div>
-              <dt className="text-gray-500">入居状態</dt>
-              <dd className="mt-0.5">
-                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${occ.className}`}>
-                  {occ.label}
-                </span>
-              </dd>
             </div>
           </dl>
         )}
@@ -168,7 +158,6 @@ export default async function UnitDetailPage({ params, searchParams }: PageProps
                 effective_from: uc.effective_from,
                 is_not_applicable: uc.is_not_applicable ?? false,
               }))}
-              hasResident={hasResident}
             />
           ) : (
             <p className="text-sm text-gray-500">
@@ -239,6 +228,12 @@ export default async function UnitDetailPage({ params, searchParams }: PageProps
             </p>
             <UnitInviteForm action={inviteAction} />
           </div>
+
+          {currentOwner && (
+            <div className="border-t border-gray-100 pt-4 mt-4">
+              <MoveOutButton action={moveOutResident.bind(null, id)} />
+            </div>
+          )}
         </section>
       )}
 
@@ -257,6 +252,26 @@ export default async function UnitDetailPage({ params, searchParams }: PageProps
               submitLabel="設定する"
             />
           </div>
+        )}
+        {canEdit && profileHistory && profileHistory.length > 0 && (
+          <details className="border-t border-gray-100 pt-4 mt-4">
+            <summary className="text-xs font-medium text-gray-500 cursor-pointer select-none">
+              変更履歴（{profileHistory.length}件）
+            </summary>
+            <div className="mt-3 space-y-2">
+              {profileHistory.map((p) => (
+                <div key={p.id} className="flex items-start gap-2 text-xs text-gray-500">
+                  <span className="shrink-0 rounded px-1.5 py-0.5 bg-gray-100 text-gray-500">
+                    {p.source === 'user' ? '住民' : '管理者'}
+                  </span>
+                  <span className="flex-1">{p.transfer_name}・{p.bank_name}</span>
+                  <span className="shrink-0 text-gray-400">
+                    {p.effective_from} 〜 {p.effective_to}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </details>
         )}
       </section>
     </div>

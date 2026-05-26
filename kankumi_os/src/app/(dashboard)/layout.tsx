@@ -32,25 +32,22 @@ export default async function DashboardLayout({
   const role = membership.role as MemberRole
   const orgId = membership.organization_id
 
-  let unitNumber: string | undefined
-  if (role === 'resident') {
-    const h = await headers()
-    const pathname = h.get('x-pathname') ?? ''
+  const h = await headers()
+  const pathname = h.get('x-pathname') ?? ''
 
-    const { data: ownerRow } = await supabase
-      .from('unit_owners')
-      .select('name_kana, units(unit_number)')
-      .eq('organization_id', orgId)
-      .eq('user_id', user.id)
-      .is('end_date', null)
-      .single()
+  const { data: ownerRow } = await supabase
+    .from('unit_owners')
+    .select('name_kana, units(unit_number)')
+    .eq('organization_id', orgId)
+    .eq('user_id', user.id)
+    .is('end_date', null)
+    .maybeSingle()
 
-    const unitInfo = ownerRow?.units as { unit_number: string } | null
-    unitNumber = unitInfo?.unit_number
+  const unitInfo = ownerRow?.units as { unit_number: string } | null
+  const unitNumber = unitInfo?.unit_number
 
-    if (!ownerRow?.name_kana && pathname !== '/my/setup') {
-      redirect('/my/setup')
-    }
+  if (ownerRow && !ownerRow.name_kana && pathname !== '/my/profile') {
+    redirect('/my/profile')
   }
 
   return (

@@ -21,7 +21,7 @@ export async function setupResidentProfile(
     .eq('is_active', true)
     .single()
 
-  if (!membership || membership.role !== 'resident') return '権限がありません。'
+  if (!membership) return '権限がありません。'
 
   const orgId = membership.organization_id
 
@@ -74,6 +74,6 @@ export async function setupResidentProfile(
 
   if (profileError) return '振込情報の登録に失敗しました。'
 
-  revalidatePath('/my/setup')
+  revalidatePath('/my/profile')
   redirect('/announcements')
 }

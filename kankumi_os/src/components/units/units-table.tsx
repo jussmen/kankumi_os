@@ -2,30 +2,14 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import type { Database } from '@/types/database'
-
-type OccupancyStatus = Database['public']['Enums']['occupancy_status']
-type SortKey = 'unit_number' | 'occupancy_status' | 'charge'
+type SortKey = 'unit_number' | 'charge'
 type SortDir = 'asc' | 'desc'
 
 const PAGE_SIZE = 25
 
-const OCCUPANCY_STYLES: Record<OccupancyStatus, { label: string; className: string }> = {
-  occupied: { label: '居住中', className: 'bg-green-100 text-green-700' },
-  vacant: { label: '空室', className: 'bg-yellow-100 text-yellow-700' },
-  excluded: { label: '対象外', className: 'bg-gray-100 text-gray-500' },
-}
-
-const OCCUPANCY_ORDER: Record<OccupancyStatus, number> = {
-  occupied: 0,
-  vacant: 1,
-  excluded: 2,
-}
-
 export interface UnitRow {
   id: string
   unit_number: string
-  occupancy_status: OccupancyStatus
   hasCharge: boolean
   chargeConfirmed: boolean
 }
@@ -80,8 +64,6 @@ export function UnitsTable({ units, canEdit }: UnitsTableProps) {
       let cmp = 0
       if (sortKey === 'unit_number') {
         cmp = naturalCompare(a.unit_number, b.unit_number)
-      } else if (sortKey === 'occupancy_status') {
-        cmp = OCCUPANCY_ORDER[a.occupancy_status] - OCCUPANCY_ORDER[b.occupancy_status]
       } else if (sortKey === 'charge') {
         const score = (u: UnitRow) => u.chargeConfirmed ? 0 : u.hasCharge ? 1 : 2
         cmp = score(a) - score(b)
@@ -109,10 +91,6 @@ export function UnitsTable({ units, canEdit }: UnitsTableProps) {
                 部屋番号
                 <SortIndicator active={sortKey === 'unit_number'} dir={sortDir} />
               </th>
-              <th className={thClass('occupancy_status')} onClick={() => handleSort('occupancy_status')}>
-                入居状態
-                <SortIndicator active={sortKey === 'occupancy_status'} dir={sortDir} />
-              </th>
               <th className={thClass('charge')} onClick={() => handleSort('charge')}>
                 台帳ステータス
                 <SortIndicator active={sortKey === 'charge'} dir={sortDir} />
@@ -120,37 +98,27 @@ export function UnitsTable({ units, canEdit }: UnitsTableProps) {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {pageUnits.map((unit) => {
-              const occ = OCCUPANCY_STYLES[unit.occupancy_status]
-              return (
-                <tr key={unit.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/units/${unit.id}`}
-                      className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
-                    >
-                      {unit.unit_number}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${occ.className}`}
-                    >
-                      {occ.label}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    {unit.chargeConfirmed ? (
-                      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-100 text-green-700">台帳有効</span>
-                    ) : unit.hasCharge ? (
-                      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-700">要確認</span>
-                    ) : (
-                      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-500">未設定</span>
-                    )}
-                  </td>
-                </tr>
-              )
-            })}
+            {pageUnits.map((unit) => (
+              <tr key={unit.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-4 py-3">
+                  <Link
+                    href={`/units/${unit.id}`}
+                    className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    {unit.unit_number}
+                  </Link>
+                </td>
+                <td className="px-4 py-3">
+                  {unit.chargeConfirmed ? (
+                    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-100 text-green-700">台帳有効</span>
+                  ) : unit.hasCharge ? (
+                    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-700">要確認</span>
+                  ) : (
+                    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-500">未設定</span>
+                  )}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

@@ -12,7 +12,7 @@ const CHARGE_TYPE_LABELS: Record<string, string> = {
   other: 'その他',
 }
 
-export default async function ResidentSetupPage() {
+export default async function ResidentProfilePage() {
   const supabase = await createClient()
   const {
     data: { user },
@@ -27,7 +27,6 @@ export default async function ResidentSetupPage() {
     .single()
 
   if (!membership) redirect('/onboarding')
-  if (membership.role !== 'resident') redirect('/announcements')
 
   const orgId = membership.organization_id
 
@@ -72,7 +71,7 @@ export default async function ResidentSetupPage() {
   return (
     <div className="px-4 py-8 max-w-lg mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">住民情報の登録</h1>
+        <h1 className="text-2xl font-bold text-gray-800">住民情報</h1>
         <p className="text-sm text-gray-500 mt-1">{unitNumber}号室</p>
       </div>
 
