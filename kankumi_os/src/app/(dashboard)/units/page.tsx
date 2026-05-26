@@ -49,8 +49,13 @@ export default async function UnitsPage({ searchParams }: PageProps) {
     .eq('organization_id', orgId)
     .order('unit_number')
 
-  if (isResident && myUnitId) {
-    unitsQuery.eq('id', myUnitId)
+  // 住民で部屋が未登録（解除済み等）の場合は0件にする
+  if (isResident) {
+    if (myUnitId) {
+      unitsQuery.eq('id', myUnitId)
+    } else {
+      unitsQuery.eq('id', 'none')
+    }
   }
 
   const [

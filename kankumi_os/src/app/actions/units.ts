@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { inviteMember } from './members'
 import type { Database } from '@/types/database'
 
@@ -135,10 +136,20 @@ export async function moveOutResident(
   unitId: string
 ): Promise<{ error: string | null }> {
   const { supabase, orgId } = await getContext()
+  const adminClient = createAdminClient()
 
   const today = new Date().toISOString().slice(0, 10)
 
-  const { error } = await supabase
+  // 解除対象の unit_owners を先に取得（user_id が必要）
+  const { data: ownerRow } = await supabase
+    .from('unit_owners')
+    .select('user_id')
+    .eq('unit_id', unitId)
+    .eq('organization_id', orgId)
+    .is('end_date', null)
+    .single()
+
+  const { error } = await adminClient
     .from('unit_owners')
     .update({ end_date: today })
     .eq('unit_id', unitId)
@@ -146,6 +157,16 @@ export async function moveOutResident(
     .is('end_date', null)
 
   if (error) return { error: '住民の解除に失敗しました。' }
+
+  // 住民ロールのメンバーのみアカウントを無効化（役員兼任の場合は無効化しない）
+  if (ownerRow?.user_id) {
+    await adminClient
+      .from('organization_members')
+      .update({ is_active: false })
+      .eq('user_id', ownerRow.user_id)
+      .eq('organization_id', orgId)
+      .eq('role', 'resident')
+  }
 
   revalidatePath(`/units/${unitId}`)
   revalidatePath('/units')
