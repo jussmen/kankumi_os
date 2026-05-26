@@ -37,14 +37,11 @@ export default async function DashboardLayout({
 
   const { data: ownerRow } = await supabase
     .from('unit_owners')
-    .select('name_kana, units(unit_number)')
+    .select('name_kana')
     .eq('organization_id', orgId)
     .eq('user_id', user.id)
     .is('end_date', null)
     .maybeSingle()
-
-  const unitInfo = ownerRow?.units as { unit_number: string } | null
-  const unitNumber = unitInfo?.unit_number
 
   if (ownerRow && !ownerRow.name_kana && pathname !== '/my/profile') {
     redirect('/my/profile')
@@ -52,7 +49,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex h-full">
-      <Sidebar role={role} orgName={orgName} userEmail={user.email ?? ''} unitNumber={unitNumber} />
+      <Sidebar role={role} orgName={orgName} userEmail={user.email ?? ''} />
       <main className="flex-1 overflow-y-auto bg-gray-50">{children}</main>
     </div>
   )

@@ -34,7 +34,7 @@ const NAV_GROUPS: NavGroup[] = [
       {
         label: '住民台帳',
         href: '/units',
-        roles: ['admin', 'vice_president', 'treasurer', 'board_member', 'resident'],
+        roles: ['admin', 'vice_president', 'treasurer', 'board_member'],
       },
       {
         label: '入金管理',
@@ -74,7 +74,6 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: 'マイページ',
     items: [
       {
         label: 'マイプロフィール',
@@ -99,10 +98,9 @@ interface SidebarProps {
   role: MemberRole
   orgName: string
   userEmail: string
-  unitNumber?: string
 }
 
-export function Sidebar({ role, orgName, userEmail, unitNumber }: SidebarProps) {
+export function Sidebar({ role, orgName, userEmail }: SidebarProps) {
   const pathname = usePathname()
 
   const visibleGroups = NAV_GROUPS.map((group) => ({
@@ -132,10 +130,6 @@ export function Sidebar({ role, orgName, userEmail, unitNumber }: SidebarProps) 
                 const isActive =
                   pathname === item.href ||
                   (item.href !== '/dashboard' && pathname.startsWith(item.href + '/'))
-                const label =
-                  role === 'resident' && item.href === '/units' && unitNumber
-                    ? `${unitNumber}住民情報`
-                    : item.label
                 return (
                   <Link
                     key={item.href}
@@ -146,7 +140,7 @@ export function Sidebar({ role, orgName, userEmail, unitNumber }: SidebarProps) 
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                     }`}
                   >
-                    {label}
+                    {item.label}
                   </Link>
                 )
               })}
