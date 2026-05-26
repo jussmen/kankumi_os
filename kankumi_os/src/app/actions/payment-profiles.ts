@@ -71,6 +71,29 @@ export async function registerPaymentProfile(
   return null
 }
 
+export async function clearAdminPaymentProfile(
+  unitId: string
+): Promise<{ error: string | null }> {
+  const { supabase, orgId, role } = await getContext()
+
+  if (!['admin', 'vice_president', 'treasurer'].includes(role)) {
+    return { error: '権限がありません。' }
+  }
+
+  const { error } = await supabase
+    .from('payment_profiles')
+    .update({ effective_to: today() })
+    .eq('unit_id', unitId)
+    .eq('organization_id', orgId)
+    .eq('source', 'admin')
+    .is('effective_to', null)
+
+  if (error) return { error: '振込情報の削除に失敗しました。' }
+
+  revalidatePath('/units/' + unitId)
+  return { error: null }
+}
+
 export async function adminSetPaymentProfile(
   unitId: string,
   _prevState: string | null,

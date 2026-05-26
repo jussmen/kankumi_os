@@ -2,12 +2,13 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { updateUnit, inviteResidentToUnit, moveOutResident } from '@/app/actions/units'
-import { adminSetPaymentProfile } from '@/app/actions/payment-profiles'
+import { adminSetPaymentProfile, clearAdminPaymentProfile } from '@/app/actions/payment-profiles'
 import { UnitForm } from '@/components/units/unit-form'
 import { UnitChargesForm } from '@/components/units/unit-charges-form'
 import { UnitInviteForm } from '@/components/units/unit-invite-form'
 import { MoveOutButton } from '@/components/units/move-out-button'
 import { PaymentProfileForm } from '@/components/payment-profiles/payment-profile-form'
+import { ClearAdminProfileButton } from '@/components/payment-profiles/clear-admin-profile-button'
 const CHARGE_TYPE_LABELS: Record<string, string> = {
   management_fee: '管理費',
   reserve_fund: '修繕積立金',
@@ -242,11 +243,26 @@ export default async function UnitDetailPage({ params, searchParams }: PageProps
         <h2 className="text-base font-semibold text-gray-800 mb-4">振込情報</h2>
         <div className="space-y-4 text-sm mb-4">
           <ProfileRow label="住民の振込情報" profile={userProfile ?? null} />
-          <ProfileRow label="管理者の振込情報" profile={adminProfile ?? null} />
+          <div className="flex items-start gap-3 py-2 border-b border-gray-100 last:border-0">
+            <span className={`mt-0.5 inline-block w-2.5 h-2.5 rounded-full shrink-0 ${adminProfile ? 'bg-green-500' : 'bg-gray-200'}`} />
+            <div className="flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-medium text-gray-700">管理者による振込情報の修正</p>
+                {canEdit && adminProfile && (
+                  <ClearAdminProfileButton action={clearAdminPaymentProfile.bind(null, id)} />
+                )}
+              </div>
+              {adminProfile ? (
+                <p className="text-gray-500 mt-0.5">{adminProfile.transfer_name}・{adminProfile.bank_name}</p>
+              ) : (
+                <p className="text-gray-400 mt-0.5">未登録</p>
+              )}
+            </div>
+          </div>
         </div>
         {canEdit && (
           <div className="border-t border-gray-100 pt-4">
-            <p className="text-xs font-medium text-gray-500 mb-3">管理者として振込情報を設定</p>
+            <p className="text-xs font-medium text-gray-500 mb-3">管理者による振込情報の修正を入力</p>
             <PaymentProfileForm
               action={adminSetPaymentProfile.bind(null, id)}
               submitLabel="設定する"

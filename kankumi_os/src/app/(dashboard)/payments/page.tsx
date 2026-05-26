@@ -77,11 +77,7 @@ export default async function PaymentsPage() {
     recordMap.set(`${r.unit_id}:${r.year_month}`, r.status)
   }
 
-  const profilesByUnit = new Map<string, Set<string>>()
-  for (const p of profiles ?? []) {
-    if (!profilesByUnit.has(p.unit_id)) profilesByUnit.set(p.unit_id, new Set())
-    profilesByUnit.get(p.unit_id)!.add(p.source)
-  }
+  const profileUnitIds = new Set((profiles ?? []).map((p) => p.unit_id))
   const chargeUnitIds = new Set((charges ?? []).map((c) => c.unit_id))
 
   const { count: unmatchedCount } = await supabase
@@ -127,7 +123,7 @@ export default async function PaymentsPage() {
               <th className="px-4 py-3 text-left font-medium sticky left-0 bg-gray-50 min-w-[120px]">
                 部屋番号
               </th>
-              <th className="px-3 py-3 text-center font-medium min-w-[72px]" title="振込情報（住民）/ 振込情報（管理）/ 月額料金">
+              <th className="px-3 py-3 text-center font-medium min-w-[72px]" title="振込情報 / 月額料金">
                 準備
               </th>
               {months.map((ym) => (
@@ -148,9 +144,7 @@ export default async function PaymentsPage() {
               </tr>
             ) : (
               (units ?? []).map((unit) => {
-                const unitProfiles = profilesByUnit.get(unit.id) ?? new Set()
-                const hasUserProfile = unitProfiles.has('user')
-                const hasAdminProfile = unitProfiles.has('admin')
+                const hasProfile = profileUnitIds.has(unit.id)
                 const hasCharge = chargeUnitIds.has(unit.id)
 
                 return (
@@ -165,8 +159,7 @@ export default async function PaymentsPage() {
                     </td>
                     <td className="px-3 py-2 text-center">
                       <span className="inline-flex gap-0.5">
-                        <Dot filled={hasUserProfile} title="振込情報（住民）" />
-                        <Dot filled={hasAdminProfile} title="振込情報（管理）" />
+                        <Dot filled={hasProfile} title="振込情報" />
                         <Dot filled={hasCharge} title="月額料金" />
                       </span>
                     </td>
@@ -206,8 +199,8 @@ export default async function PaymentsPage() {
           未入金
         </span>
         <span className="flex items-center gap-1">
-          <Dot filled={true} title="" /><Dot filled={true} title="" /><Dot filled={true} title="" />
-          準備: 振込情報（住民）/ 振込情報（管理）/ 月額料金
+          <Dot filled={true} title="" /><Dot filled={true} title="" />
+          準備: 振込情報 / 月額料金
         </span>
       </div>
     </div>
