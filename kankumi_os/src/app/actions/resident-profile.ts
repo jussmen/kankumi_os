@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function setupResidentProfile(
   _prevState: string | null,
@@ -45,7 +46,10 @@ export async function setupResidentProfile(
   if (!transfer_name) return '振込名義を入力してください。'
   if (!bank_name) return '銀行名を入力してください。'
 
-  const { error: ownerError } = await supabase
+  // 書き込みは adminClient で実行（住民ロールには unit_owners / payment_profiles の write ポリシーがないため）
+  const adminClient = createAdminClient()
+
+  const { error: ownerError } = await adminClient
     .from('unit_owners')
     .update({ name, name_kana, charge_confirmed_at: new Date().toISOString() })
     .eq('id', ownerRow.id)
@@ -54,7 +58,7 @@ export async function setupResidentProfile(
 
   const today = new Date().toISOString().slice(0, 10)
 
-  await supabase
+  await adminClient
     .from('payment_profiles')
     .update({ effective_to: today })
     .eq('unit_id', ownerRow.unit_id)
@@ -62,7 +66,7 @@ export async function setupResidentProfile(
     .eq('source', 'user')
     .is('effective_to', null)
 
-  const { error: profileError } = await supabase.from('payment_profiles').insert({
+  const { error: profileError } = await adminClient.from('payment_profiles').insert({
     organization_id: orgId,
     unit_id: ownerRow.unit_id,
     source: 'user',
