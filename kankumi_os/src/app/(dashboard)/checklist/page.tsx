@@ -1,10 +1,11 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { seedChecklistFromTemplates } from '@/app/actions/checklist'
+import { seedChecklistFromTemplates, deleteAllChecklistItems, createTemplatesFromChecklist } from '@/app/actions/checklist'
 import { ChecklistItemRow } from '@/components/checklist/checklist-item-row'
 import { AddChecklistForm } from '@/components/checklist/add-checklist-form'
 import { FiscalYearSelect } from '@/components/checklist/fiscal-year-select'
+import { BulkChecklistActions } from '@/components/checklist/bulk-checklist-actions'
 
 interface PageProps {
   searchParams: Promise<{ fiscal_year_id?: string }>
@@ -106,17 +107,23 @@ export default async function ChecklistPage({ searchParams }: PageProps) {
       </div>
 
       {total > 0 && (
-        <div className="flex gap-4 mb-4 text-sm">
+        <div className="flex gap-4 mb-3 text-sm">
           <span className="text-gray-500">全 {total} 件</span>
           <span className="text-green-600">完了 {completed}</span>
           <span className="text-gray-500">未完了 {pending}</span>
           <span className="text-yellow-600">スキップ {skipped}</span>
-          {total > 0 && (
-            <span className="text-gray-400">
-              進捗 {Math.round((completed / total) * 100)}%
-            </span>
-          )}
+          <span className="text-gray-400">
+            進捗 {Math.round((completed / total) * 100)}%
+          </span>
         </div>
+      )}
+
+      {hasItems && (
+        <BulkChecklistActions
+          fiscalYearId={selectedYear.id}
+          onBulkDelete={deleteAllChecklistItems}
+          onSaveAsTemplate={createTemplatesFromChecklist}
+        />
       )}
 
       {!seeded && hasTemplates && (

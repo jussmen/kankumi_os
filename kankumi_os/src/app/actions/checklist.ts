@@ -203,3 +203,61 @@ export async function deleteChecklistTemplate(id: string): Promise<void> {
   revalidatePath('/checklist/templates')
   revalidatePath('/checklist')
 }
+
+export async function deleteAllChecklistItems(fiscalYearId: string): Promise<void> {
+  const { supabase, orgId } = await getContext()
+  await supabase
+    .from('annual_checklists')
+    .delete()
+    .eq('fiscal_year_id', fiscalYearId)
+    .eq('organization_id', orgId)
+  revalidatePath('/checklist')
+  revalidatePath('/calendar')
+}
+
+export async function createTemplatesFromChecklist(
+  fiscalYearId: string
+): Promise<{ created: number }> {
+  const { supabase, orgId, role } = await getContext()
+  if (!BOARD_ROLES.includes(role)) return { created: 0 }
+
+  const { data: items } = await supabase
+    .from('annual_checklists')
+    .select('title, template_id')
+    .eq('fiscal_year_id', fiscalYearId)
+    .eq('organization_id', orgId)
+    .is('template_id', null)
+
+  if (!items || items.length === 0) return { created: 0 }
+
+  // "(N回目)" サフィックスを除いてタイトルをグループ化・カウント
+  const titleCount = new Map<string, number>()
+  for (const item of items) {
+    const base = item.title.replace(/（\d+回目）$/, '').trim()
+    titleCount.set(base, (titleCount.get(base) ?? 0) + 1)
+  }
+
+  const { data: existing } = await supabase
+    .from('checklist_templates')
+    .select('label')
+    .eq('organization_id', orgId)
+
+  const existingLabels = new Set((existing ?? []).map((t) => t.label))
+
+  const toCreate = [...titleCount.entries()]
+    .filter(([label]) => !existingLabels.has(label))
+    .map(([label, count], i) => ({
+      organization_id: orgId,
+      key: `custom-${orgId}-${Date.now()}-${i}`,
+      label,
+      default_frequency: 'annual',
+      count,
+    }))
+
+  if (toCreate.length === 0) return { created: 0 }
+
+  await supabase.from('checklist_templates').insert(toCreate)
+  revalidatePath('/checklist/templates')
+  revalidatePath('/checklist')
+  return { created: toCreate.length }
+}
