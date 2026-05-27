@@ -215,12 +215,6 @@ export default async function TopicDetailPage({ params, searchParams }: PageProp
                   targetStatus="resolved"
                   label={STATUS_STYLES.resolved.label}
                 />
-                <ResolveTopicForm
-                  topicId={id}
-                  currentStatus={topic.status}
-                  targetStatus="closed"
-                  label={STATUS_STYLES.closed.label}
-                />
               </div>
             )}
 
