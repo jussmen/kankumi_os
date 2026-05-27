@@ -73,6 +73,15 @@ export default async function SettingsPage() {
             管理費・修繕積立金などの徴収項目を追加・変更します。
           </p>
         </Link>
+        <Link
+          href="/settings/bank-accounts"
+          className="flex flex-col gap-2 rounded-lg border border-gray-200 bg-white p-5 hover:border-blue-300 hover:shadow-sm transition-all"
+        >
+          <h2 className="text-base font-semibold text-gray-800">銀行口座設定</h2>
+          <p className="text-sm text-gray-500">
+            CSVインポートで使用する銀行口座を登録・変更します。
+          </p>
+        </Link>
       </div>
 
       <div className="mt-10 max-w-3xl">

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import { importBankTransactions } from '@/app/actions/bank-imports'
 import { parseByPresetKey, type ParsedRow } from '@/lib/bank-csv/parsers'
 
@@ -88,7 +89,14 @@ export function BankCsvImport({ mappers }: Props) {
   if (mappers.length === 0) {
     return (
       <div className="rounded-md bg-yellow-50 border border-yellow-200 px-4 py-3 text-sm text-yellow-700">
-        銀行口座が設定されていません。設定ページで口座を登録してください。
+        銀行口座が設定されていません。
+        <Link
+          href="/settings/bank-accounts"
+          className="ml-1 underline hover:text-yellow-900"
+        >
+          銀行口座設定ページ
+        </Link>
+        で口座を登録してください。
       </div>
     )
   }
