@@ -226,7 +226,7 @@ export default async function PaymentsPage({ searchParams }: PageProps) {
                       return (
                         <td key={ym} className={`px-3 py-2 text-center ${isCurrent ? 'bg-blue-50' : ''}`}>
                           <Link
-                            href={`/payments/${ym}`}
+                            href={`/payments/${ym}/${unit.id}`}
                             className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium transition-colors ${cell.bg}`}
                           >
                             {cell.label}

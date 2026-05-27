@@ -92,7 +92,7 @@ export default async function YearMonthPage({ params }: PageProps) {
     <div className="px-6 py-8">
       <div className="mb-6">
         <Link href="/payments" className="text-sm text-gray-500 hover:text-gray-700">
-          ← 入金管理
+          ← 入金確認
         </Link>
         <div className="flex items-start justify-between mt-2">
           <h1 className="text-2xl font-bold text-gray-800">{displayMonth} 入金状況</h1>
@@ -134,16 +134,28 @@ export default async function YearMonthPage({ params }: PageProps) {
               const status = rec?.status ?? 'missing'
               return (
                 <tr key={unit.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2.5 font-medium text-gray-800">{unit.unit_number}</td>
                   <td className="px-4 py-2.5">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[status]}`}
+                    <Link
+                      href={`/payments/${yearMonth}/${unit.id}`}
+                      className="font-medium text-gray-800 hover:text-blue-600 transition-colors"
                     >
-                      {STATUS_LABEL[status]}
-                    </span>
-                    {rec?.has_irregularity_flag && (
-                      <span className="ml-2 text-xs text-yellow-600">金額差異</span>
-                    )}
+                      {unit.unit_number}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <Link
+                      href={`/payments/${yearMonth}/${unit.id}`}
+                      className="inline-flex items-center gap-2"
+                    >
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[status]}`}
+                      >
+                        {STATUS_LABEL[status]}
+                      </span>
+                      {rec?.has_irregularity_flag && (
+                        <span className="text-xs text-yellow-600">金額差異</span>
+                      )}
+                    </Link>
                   </td>
                   <td className="px-4 py-2.5 text-right text-gray-700">
                     {rec && Number(rec.paid_amount) > 0
