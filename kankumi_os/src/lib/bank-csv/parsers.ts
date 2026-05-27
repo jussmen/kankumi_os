@@ -91,12 +91,25 @@ export function parseYokohamaBank(text: string): ParsedRow[] {
   return rows
 }
 
-export function parseByPresetKey(presetKey: string, buffer: ArrayBuffer, encoding: string): ParsedRow[] {
-  const text = new TextDecoder(encoding).decode(buffer)
+function parseWithKey(presetKey: string, text: string): ParsedRow[] {
   switch (presetKey) {
     case 'resona': return parseResona(text)
     case 'mizuho': return parseMizuho(text)
     case 'yokohama-bank': return parseYokohamaBank(text)
     default: throw new Error(`未対応の銀行フォーマット: ${presetKey}`)
   }
+}
+
+export function parseByPresetKey(presetKey: string, buffer: ArrayBuffer, encoding: string): ParsedRow[] {
+  const encodings = [...new Set([encoding, 'utf-8', 'shift-jis'])]
+  for (const enc of encodings) {
+    try {
+      const text = new TextDecoder(enc).decode(buffer)
+      const rows = parseWithKey(presetKey, text)
+      if (rows.length > 0) return rows
+    } catch {
+      // try next encoding
+    }
+  }
+  return parseWithKey(presetKey, new TextDecoder(encoding).decode(buffer))
 }
