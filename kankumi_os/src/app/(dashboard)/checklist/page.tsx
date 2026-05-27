@@ -81,12 +81,20 @@ export default async function ChecklistPage({ searchParams }: PageProps) {
     <div className="px-6 py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-800">年間業務</h1>
-        <Link
-          href="/checklist/new-fiscal-year"
-          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-        >
-          + 会計年度
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/checklist/templates"
+            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            テンプレート管理
+          </Link>
+          <Link
+            href="/checklist/new-fiscal-year"
+            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            + 会計年度
+          </Link>
+        </div>
       </div>
 
       <div className="flex items-center gap-3 mb-6">

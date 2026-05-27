@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 
+const BOARD_ROLES = ['admin', 'vice_president', 'treasurer', 'board_member']
+
 async function getContext() {
   const supabase = await createClient()
   const {
@@ -13,13 +15,13 @@ async function getContext() {
 
   const { data } = await supabase
     .from('organization_members')
-    .select('organization_id')
+    .select('organization_id, role')
     .eq('user_id', user.id)
     .eq('is_active', true)
     .single()
 
   if (!data) redirect('/onboarding')
-  return { supabase, orgId: data.organization_id, userId: user.id }
+  return { supabase, orgId: data.organization_id, userId: user.id, role: data.role }
 }
 
 export async function createFiscalYear(
@@ -141,4 +143,54 @@ export async function updateChecklistItem(
   revalidatePath('/checklist')
   revalidatePath('/calendar')
   return null
+}
+
+export async function deleteChecklistItem(id: string): Promise<void> {
+  const { supabase, orgId } = await getContext()
+  await supabase
+    .from('annual_checklists')
+    .delete()
+    .eq('id', id)
+    .eq('organization_id', orgId)
+  revalidatePath('/checklist')
+  revalidatePath('/calendar')
+}
+
+export async function createChecklistTemplate(
+  _prevState: string | null,
+  formData: FormData
+): Promise<string | null> {
+  const { supabase, orgId, role } = await getContext()
+  if (!BOARD_ROLES.includes(role)) return '権限がありません。'
+
+  const label = (formData.get('label') as string)?.trim()
+  if (!label) return 'テンプレート名を入力してください。'
+
+  const notes = (formData.get('notes') as string)?.trim() || null
+
+  const { error } = await supabase.from('checklist_templates').insert({
+    organization_id: orgId,
+    key: `custom-${orgId}-${Date.now()}`,
+    label,
+    default_frequency: 'annual',
+    notes,
+  })
+
+  if (error) return 'テンプレートの作成に失敗しました。'
+
+  revalidatePath('/checklist/templates')
+  revalidatePath('/checklist')
+  return null
+}
+
+export async function deleteChecklistTemplate(id: string): Promise<void> {
+  const { supabase, orgId, role } = await getContext()
+  if (!BOARD_ROLES.includes(role)) return
+  await supabase
+    .from('checklist_templates')
+    .delete()
+    .eq('id', id)
+    .eq('organization_id', orgId)
+  revalidatePath('/checklist/templates')
+  revalidatePath('/checklist')
 }

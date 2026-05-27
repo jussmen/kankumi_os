@@ -454,6 +454,7 @@ export type Database = {
           label: string
           legal_basis: string | null
           notes: string | null
+          organization_id: string | null
         }
         Insert: {
           created_at?: string
@@ -463,6 +464,7 @@ export type Database = {
           label: string
           legal_basis?: string | null
           notes?: string | null
+          organization_id?: string | null
         }
         Update: {
           created_at?: string
@@ -472,8 +474,17 @@ export type Database = {
           label?: string
           legal_basis?: string | null
           notes?: string | null
+          organization_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "checklist_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       comments: {
         Row: {

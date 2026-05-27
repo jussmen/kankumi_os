@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useActionState } from 'react'
-import { updateChecklistStatus, updateChecklistItem } from '@/app/actions/checklist'
+import { updateChecklistStatus, updateChecklistItem, deleteChecklistItem } from '@/app/actions/checklist'
 
 type ChecklistStatus = 'pending' | 'completed' | 'skipped'
 
@@ -21,7 +21,9 @@ const STATUS_STYLES: Record<ChecklistStatus, { label: string; className: string 
 
 export function ChecklistItemRow({ item }: { item: ChecklistItem }) {
   const [isEditing, setIsEditing] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [isDeleting, startDeleteTransition] = useTransition()
 
   const boundUpdateItem = updateChecklistItem.bind(null, item.id)
   const [editError, formAction, isFormPending] = useActionState(boundUpdateItem, null)
@@ -39,6 +41,12 @@ export function ChecklistItemRow({ item }: { item: ChecklistItem }) {
     }
     startTransition(async () => {
       await updateChecklistStatus(item.id, next[status])
+    })
+  }
+
+  function handleDelete() {
+    startDeleteTransition(async () => {
+      await deleteChecklistItem(item.id)
     })
   }
 
@@ -112,11 +120,41 @@ export function ChecklistItemRow({ item }: { item: ChecklistItem }) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setIsEditing(false)}
+                  onClick={() => { setIsEditing(false); setConfirmDelete(false) }}
                   className="rounded border border-gray-300 px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50"
                 >
                   取消
                 </button>
+                <div className="ml-auto flex items-center gap-2">
+                  {!confirmDelete ? (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete(true)}
+                      className="text-xs text-red-500 hover:text-red-700 transition-colors"
+                    >
+                      削除
+                    </button>
+                  ) : (
+                    <>
+                      <span className="text-xs text-red-600">本当に削除しますか？</span>
+                      <button
+                        type="button"
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className="text-xs font-medium text-red-600 hover:text-red-800 disabled:opacity-50"
+                      >
+                        {isDeleting ? '...' : 'はい'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDelete(false)}
+                        className="text-xs text-gray-500 hover:text-gray-700"
+                      >
+                        いいえ
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             </form>
           )}
