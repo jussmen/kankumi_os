@@ -33,7 +33,7 @@ export default async function TasksPage({ searchParams }: PageProps) {
 
   let query = supabase
     .from('tasks')
-    .select('id, title, status, due_date, assignee_id, topic_id, created_at')
+    .select('id, title, status, due_date, assignee_id, topic_id, created_at, topics(id, title)')
     .eq('organization_id', orgId)
     .order('due_date', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false })
@@ -115,18 +115,31 @@ export default async function TasksPage({ searchParams }: PageProps) {
             const st = STATUS_STYLES[task.status] ?? STATUS_STYLES.todo
             const isOverdue =
               task.status !== 'done' && task.due_date && task.due_date < today
+            const parentTopic = Array.isArray(task.topics) ? task.topics[0] : task.topics
 
             return (
-              <Link
+              <div
                 key={task.id}
-                href={`/tasks/${task.id}`}
-                className={`block rounded-lg border border-gray-200 px-5 py-4 hover:border-blue-300 hover:shadow-sm transition-all ${
+                className={`rounded-lg border border-gray-200 px-5 py-4 hover:border-blue-300 hover:shadow-sm transition-all ${
                   isOverdue ? 'bg-red-50' : 'bg-white'
                 }`}
               >
+                {parentTopic && (
+                  <Link
+                    href={`/topics/${parentTopic.id}`}
+                    className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800 mb-1.5"
+                  >
+                    ← {parentTopic.title}
+                  </Link>
+                )}
                 <div className="flex items-center gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 truncate">{task.title}</p>
+                    <Link
+                      href={`/tasks/${task.id}`}
+                      className="block font-medium text-gray-900 hover:text-blue-700 truncate"
+                    >
+                      {task.title}
+                    </Link>
                     <div className="flex items-center gap-3 mt-1">
                       <span
                         className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${st.className}`}
@@ -141,13 +154,10 @@ export default async function TasksPage({ searchParams }: PageProps) {
                           {isOverdue && ' (期限切れ)'}
                         </span>
                       )}
-                      {task.topic_id && (
-                        <span className="text-xs text-gray-400">議題あり</span>
-                      )}
                     </div>
                   </div>
                 </div>
-              </Link>
+              </div>
             )
           })}
         </div>

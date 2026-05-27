@@ -42,7 +42,7 @@ const NAV_GROUPS: NavGroup[] = [
         roles: ['admin', 'vice_president', 'treasurer', 'board_member', 'auditor'],
       },
       {
-        label: '議題・タスク',
+        label: 'トピックリスト',
         href: '/topics',
         roles: ['admin', 'vice_president', 'treasurer', 'board_member'],
       },

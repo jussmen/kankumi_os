@@ -10,7 +10,7 @@ type Visibility = Database['public']['Enums']['visibility']
 
 const TYPE_LABELS: Record<TopicType, string> = {
   board_meeting: '理事会',
-  general: '一般',
+  general: '公開トピック',
   issue: '課題',
   notice: '告知',
   task: 'タスク',
@@ -79,7 +79,7 @@ export default async function TopicsPage({ searchParams }: PageProps) {
   return (
     <div className="px-6 py-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">議題・タスク</h1>
+        <h1 className="text-2xl font-bold text-gray-800">トピックリスト</h1>
         {canCreate && (
           <Link
             href="/topics/new"
@@ -93,11 +93,11 @@ export default async function TopicsPage({ searchParams }: PageProps) {
       {/* フィルター */}
       <div className="flex flex-wrap gap-2 mb-4">
         <FilterLink label="すべて" href="/topics" active={!filters.type && !filters.status && !filters.priority} />
-        {(Object.entries(TYPE_LABELS) as [TopicType, string][]).map(([v, l]) => (
-          <FilterLink key={v} label={l} href={`/topics?type=${v}`} active={filters.type === v} />
+        {(['board_meeting', 'general', 'issue'] as TopicType[]).map((v) => (
+          <FilterLink key={v} label={TYPE_LABELS[v]} href={`/topics?type=${v}`} active={filters.type === v} />
         ))}
         <span className="text-gray-300 self-center">|</span>
-        {(['open', 'in_progress', 'resolved', 'closed'] as TopicStatus[]).map((s) => (
+        {(['open', 'in_progress', 'resolved'] as TopicStatus[]).map((s) => (
           <FilterLink key={s} label={STATUS_STYLES[s].label} href={`/topics?status=${s}`} active={filters.status === s} />
         ))}
       </div>

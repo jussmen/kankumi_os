@@ -21,7 +21,7 @@ const STATUS_STYLES: Record<TopicStatus, { label: string; className: string }> =
 
 const TYPE_LABELS: Record<string, string> = {
   board_meeting: '理事会',
-  general: '一般',
+  general: '公開トピック',
   issue: '課題',
   notice: '告知',
   task: 'タスク',
@@ -121,7 +121,7 @@ export default async function TopicDetailPage({ params, searchParams }: PageProp
     <div className="px-6 py-8 max-w-3xl">
       <div className="mb-4">
         <Link href="/topics" className="text-sm text-gray-500 hover:text-gray-700">
-          ← 議題・タスク
+          ← トピックリスト
         </Link>
       </div>
 
