@@ -7,6 +7,7 @@ import { updateTaskStatus } from '@/app/actions/tasks'
 import { TopicForm } from '@/components/topics/topic-form'
 import { CommentThread } from '@/components/topics/comment-thread'
 import { ResolveTopicForm } from '@/components/topics/resolve-topic-form'
+import { CopyUrlButton } from '@/components/topics/copy-url-button'
 import type { Database } from '@/types/database'
 
 type TopicStatus = Database['public']['Enums']['topic_status']
@@ -173,6 +174,7 @@ export default async function TopicDetailPage({ params, searchParams }: PageProp
 
               {canEdit(role) && (
                 <div className="flex gap-2 shrink-0">
+                  <CopyUrlButton />
                   <form action={togglePin.bind(null, id, !topic.pinned_at)}>
                     <button
                       type="submit"
