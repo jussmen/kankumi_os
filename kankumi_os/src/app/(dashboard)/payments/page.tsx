@@ -13,19 +13,20 @@ const STATUS_CELL: Record<PaymentStatus | 'missing', { bg: string; label: string
   excluded:   { bg: 'bg-gray-50 text-gray-300', label: '除' },
 }
 
-function getFiscalYearMonths(startDate: string, endDate: string, isActive: boolean): string[] {
+function getFiscalYearMonths(startDate: string, endDate: string): string[] {
   const months: string[] = []
-  const start = new Date(startDate)
-  const now = new Date()
-  const end = isActive
-    ? new Date(now.getFullYear(), now.getMonth(), 1)
-    : new Date(endDate)
-  const d = new Date(start.getFullYear(), start.getMonth(), 1)
+  const d = new Date(new Date(startDate).getFullYear(), new Date(startDate).getMonth(), 1)
+  const end = new Date(endDate)
   while (d <= end) {
     months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
     d.setMonth(d.getMonth() + 1)
   }
   return months
+}
+
+function currentYearMonth(): string {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 }
 
 interface PageProps {
@@ -76,11 +77,8 @@ export default async function PaymentsPage({ searchParams }: PageProps) {
   const activeFiscalYear = fiscalYears.find((fy) => fy.status === 'active')
   const selectedId = params.fiscal_year_id ?? activeFiscalYear?.id ?? fiscalYears[0].id
   const selectedYear = fiscalYears.find((fy) => fy.id === selectedId) ?? fiscalYears[0]
-  const months = getFiscalYearMonths(
-    selectedYear.start_date,
-    selectedYear.end_date,
-    selectedYear.status === 'active',
-  )
+  const months = getFiscalYearMonths(selectedYear.start_date, selectedYear.end_date)
+  const thisMonth = currentYearMonth()
 
   const { data: units } = await supabase
     .from('units')
@@ -162,9 +160,7 @@ export default async function PaymentsPage({ searchParams }: PageProps) {
           defaultValue={selectedYear.id}
           basePath="/payments"
         />
-        <span className="text-xs text-gray-400">
-          {months.length}ヶ月表示
-        </span>
+        <span className="text-xs text-gray-400">{months.length}ヶ月</span>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-gray-200">
@@ -177,13 +173,22 @@ export default async function PaymentsPage({ searchParams }: PageProps) {
               <th className="px-3 py-3 text-center font-medium min-w-[72px]" title="振込情報 / 月額料金">
                 準備
               </th>
-              {months.map((ym) => (
-                <th key={ym} className="px-3 py-3 text-center font-medium min-w-[72px]">
-                  <Link href={`/payments/${ym}`} className="hover:text-blue-600 transition-colors">
-                    {ym.replace('-', '/')}
-                  </Link>
-                </th>
-              ))}
+              {months.map((ym) => {
+                const isCurrent = ym === thisMonth
+                return (
+                  <th
+                    key={ym}
+                    className={`px-3 py-3 text-center font-medium min-w-[72px] ${isCurrent ? 'bg-blue-50' : ''}`}
+                  >
+                    <Link
+                      href={`/payments/${ym}`}
+                      className={`hover:text-blue-600 transition-colors ${isCurrent ? 'text-blue-600 font-semibold' : ''}`}
+                    >
+                      {ym.replace('-', '/')}
+                    </Link>
+                  </th>
+                )
+              })}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -217,8 +222,9 @@ export default async function PaymentsPage({ searchParams }: PageProps) {
                     {months.map((ym) => {
                       const status = recordMap.get(`${unit.id}:${ym}`) ?? 'missing'
                       const cell = STATUS_CELL[status]
+                      const isCurrent = ym === thisMonth
                       return (
-                        <td key={ym} className="px-3 py-2 text-center">
+                        <td key={ym} className={`px-3 py-2 text-center ${isCurrent ? 'bg-blue-50' : ''}`}>
                           <Link
                             href={`/payments/${ym}`}
                             className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium transition-colors ${cell.bg}`}
