@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { ignoreTransaction } from '@/app/actions/bank-imports'
+import { ManualMatchForm } from '@/components/bank-imports/manual-match-form'
 import type { Database } from '@/types/database'
 
 type TransactionStatus = Database['public']['Enums']['transaction_status']
@@ -17,6 +18,8 @@ const STATUS_BADGE: Record<TransactionStatus, string> = {
   matched: 'bg-green-100 text-green-800',
   ignored: 'bg-gray-100 text-gray-500',
 }
+
+const IMPORT_ROLES = ['admin', 'vice_president', 'treasurer']
 
 interface PageProps {
   searchParams: Promise<{ status?: string }>
@@ -42,11 +45,18 @@ export default async function TransactionsPage({ searchParams }: PageProps) {
 
   const { organization_id: orgId, role } = membership
 
-  const { count: unmatchedCount } = await supabase
-    .from('bank_transactions')
-    .select('id', { count: 'exact', head: true })
-    .eq('organization_id', orgId)
-    .eq('status', 'unmatched')
+  const [{ count: unmatchedCount }, { data: units }] = await Promise.all([
+    supabase
+      .from('bank_transactions')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .eq('status', 'unmatched'),
+    supabase
+      .from('units')
+      .select('id, unit_number')
+      .eq('organization_id', orgId)
+      .order('unit_number'),
+  ])
 
   const activeStatus = (status as TransactionStatus | 'all') ?? 'unmatched'
 
@@ -69,6 +79,8 @@ export default async function TransactionsPage({ searchParams }: PageProps) {
     { key: 'all', label: 'すべて' },
   ]
 
+  const canImport = IMPORT_ROLES.includes(role)
+
   return (
     <div className="px-6 py-8">
       <div className="flex items-center justify-between mb-6">
@@ -76,7 +88,7 @@ export default async function TransactionsPage({ searchParams }: PageProps) {
           <h1 className="text-2xl font-bold text-gray-800">銀行明細</h1>
           <p className="text-sm text-gray-500 mt-1">銀行取引明細の照合・管理</p>
         </div>
-        {role === 'admin' && (
+        {canImport && (
           <Link
             href="/payments/import"
             className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
@@ -137,20 +149,27 @@ export default async function TransactionsPage({ searchParams }: PageProps) {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {tx.status === 'unmatched' && (
-                      <form
-                        action={async () => {
-                          'use server'
-                          await ignoreTransaction(tx.id)
-                        }}
-                      >
-                        <button
-                          type="submit"
-                          className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                    {tx.status === 'unmatched' && canImport && (
+                      <div className="flex flex-col items-end gap-1.5">
+                        <ManualMatchForm
+                          txId={tx.id}
+                          defaultYearMonth={tx.transaction_date.slice(0, 7)}
+                          units={units ?? []}
+                        />
+                        <form
+                          action={async () => {
+                            'use server'
+                            await ignoreTransaction(tx.id)
+                          }}
                         >
-                          無視
-                        </button>
-                      </form>
+                          <button
+                            type="submit"
+                            className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                          >
+                            無視
+                          </button>
+                        </form>
+                      </div>
                     )}
                   </td>
                 </tr>

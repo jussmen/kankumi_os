@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { BankCsvImport } from '@/components/bank-imports/bank-csv-import'
 
+const IMPORT_ROLES = ['admin', 'vice_president', 'treasurer']
+
 export default async function ImportPage() {
   const supabase = await createClient()
   const {
@@ -10,14 +12,20 @@ export default async function ImportPage() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data } = await supabase
+  const { data: membership } = await supabase
     .from('organization_members')
-    .select('role')
+    .select('organization_id, role')
     .eq('user_id', user.id)
     .eq('is_active', true)
     .single()
 
-  if (!data || data.role !== 'admin') redirect('/payments/transactions')
+  if (!membership || !IMPORT_ROLES.includes(membership.role)) redirect('/payments/transactions')
+
+  const { data: mappers } = await supabase
+    .from('bank_csv_mappers')
+    .select('id, bank_name, account_label, preset_key, encoding')
+    .eq('organization_id', membership.organization_id)
+    .order('bank_name')
 
   return (
     <div className="px-6 py-8">
@@ -32,7 +40,7 @@ export default async function ImportPage() {
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <BankCsvImport />
+        <BankCsvImport mappers={mappers ?? []} />
       </div>
     </div>
   )

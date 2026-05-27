@@ -195,6 +195,7 @@ export type Database = {
       }
       bank_csv_mappers: {
         Row: {
+          account_label: string | null
           amount_column: number
           bank_name: string
           created_at: string
@@ -208,6 +209,7 @@ export type Database = {
           skip_rows: number
         }
         Insert: {
+          account_label?: string | null
           amount_column: number
           bank_name: string
           created_at?: string
@@ -221,6 +223,7 @@ export type Database = {
           skip_rows?: number
         }
         Update: {
+          account_label?: string | null
           amount_column?: number
           bank_name?: string
           created_at?: string
