@@ -26,7 +26,7 @@ export default async function ChecklistTemplatesPage() {
 
   const { data: allTemplates } = await supabase
     .from('checklist_templates')
-    .select('id, label, notes, organization_id, default_frequency')
+    .select('id, label, notes, organization_id, count')
     .order('label')
 
   const globalTemplates = (allTemplates ?? []).filter((t) => !t.organization_id)
@@ -57,7 +57,14 @@ export default async function ChecklistTemplatesPage() {
                 className="flex items-center gap-3 bg-white rounded-lg border border-gray-200 px-4 py-3"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{t.label}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-gray-900">{t.label}</p>
+                    {(t.count ?? 1) > 1 && (
+                      <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600">
+                        年{t.count}回
+                      </span>
+                    )}
+                  </div>
                   {t.notes && <p className="text-xs text-gray-400 truncate">{t.notes}</p>}
                 </div>
                 {canEdit && (
@@ -96,7 +103,14 @@ export default async function ChecklistTemplatesPage() {
               className="flex items-center gap-3 bg-gray-50 rounded-lg border border-gray-100 px-4 py-3"
             >
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-700">{t.label}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-gray-700">{t.label}</p>
+                  {(t.count ?? 1) > 1 && (
+                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+                      年{t.count}回
+                    </span>
+                  )}
+                </div>
                 {t.notes && <p className="text-xs text-gray-400 truncate">{t.notes}</p>}
               </div>
               <span className="text-xs text-gray-400 shrink-0">システム</span>

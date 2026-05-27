@@ -58,17 +58,23 @@ export async function seedChecklistFromTemplates(fiscalYearId: string): Promise<
 
   const { data: templates } = await supabase
     .from('checklist_templates')
-    .select('id, label')
+    .select('id, label, count')
 
   if (!templates || templates.length === 0) return
 
-  const items = templates.map((t) => ({
-    organization_id: orgId,
-    fiscal_year_id: fiscalYearId,
-    template_id: t.id,
-    title: t.label,
-    status: 'pending',
-  }))
+  const items = templates.flatMap((t) => {
+    const n = t.count ?? 1
+    if (n === 1) {
+      return [{ organization_id: orgId, fiscal_year_id: fiscalYearId, template_id: t.id, title: t.label, status: 'pending' }]
+    }
+    return Array.from({ length: n }, (_, i) => ({
+      organization_id: orgId,
+      fiscal_year_id: fiscalYearId,
+      template_id: t.id,
+      title: `${t.label}（${i + 1}回目）`,
+      status: 'pending',
+    }))
+  })
 
   await supabase.from('annual_checklists').insert(items)
 
@@ -167,6 +173,8 @@ export async function createChecklistTemplate(
   if (!label) return 'テンプレート名を入力してください。'
 
   const notes = (formData.get('notes') as string)?.trim() || null
+  const countRaw = parseInt((formData.get('count') as string) ?? '1', 10)
+  const count = isNaN(countRaw) || countRaw < 1 ? 1 : Math.min(countRaw, 52)
 
   const { error } = await supabase.from('checklist_templates').insert({
     organization_id: orgId,
@@ -174,6 +182,7 @@ export async function createChecklistTemplate(
     label,
     default_frequency: 'annual',
     notes,
+    count,
   })
 
   if (error) return 'テンプレートの作成に失敗しました。'

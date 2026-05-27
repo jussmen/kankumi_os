@@ -447,6 +447,7 @@ export type Database = {
       }
       checklist_templates: {
         Row: {
+          count: number
           created_at: string
           default_frequency: string
           id: string
@@ -457,6 +458,7 @@ export type Database = {
           organization_id: string | null
         }
         Insert: {
+          count?: number
           created_at?: string
           default_frequency: string
           id?: string
@@ -467,6 +469,7 @@ export type Database = {
           organization_id?: string | null
         }
         Update: {
+          count?: number
           created_at?: string
           default_frequency?: string
           id?: string
