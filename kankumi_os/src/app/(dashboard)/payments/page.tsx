@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { FiscalYearSelect } from '@/components/checklist/fiscal-year-select'
 import type { Database } from '@/types/database'
 
 type PaymentStatus = Database['public']['Enums']['payment_status']
@@ -12,17 +13,28 @@ const STATUS_CELL: Record<PaymentStatus | 'missing', { bg: string; label: string
   excluded:   { bg: 'bg-gray-50 text-gray-300', label: '除' },
 }
 
-function getLastMonths(n: number): string[] {
+function getFiscalYearMonths(startDate: string, endDate: string, isActive: boolean): string[] {
   const months: string[] = []
+  const start = new Date(startDate)
   const now = new Date()
-  for (let i = n - 1; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+  const end = isActive
+    ? new Date(now.getFullYear(), now.getMonth(), 1)
+    : new Date(endDate)
+  const d = new Date(start.getFullYear(), start.getMonth(), 1)
+  while (d <= end) {
     months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+    d.setMonth(d.getMonth() + 1)
   }
   return months
 }
 
-export default async function PaymentsPage() {
+interface PageProps {
+  searchParams: Promise<{ fiscal_year_id?: string }>
+}
+
+export default async function PaymentsPage({ searchParams }: PageProps) {
+  const params = await searchParams
+
   const supabase = await createClient()
   const {
     data: { user },
@@ -38,8 +50,37 @@ export default async function PaymentsPage() {
   if (!membership) redirect('/onboarding')
 
   const { organization_id: orgId, role } = membership
-  const months = getLastMonths(6)
   const canEdit = ['admin', 'vice_president', 'treasurer'].includes(role)
+
+  const { data: fiscalYears } = await supabase
+    .from('fiscal_years')
+    .select('id, year, start_date, end_date, status')
+    .eq('organization_id', orgId)
+    .order('year', { ascending: false })
+
+  if (!fiscalYears || fiscalYears.length === 0) {
+    return (
+      <div className="px-6 py-8">
+        <h1 className="text-2xl font-bold text-gray-800 mb-4">入金管理</h1>
+        <p className="text-sm text-gray-500">
+          会計年度が設定されていません。
+          <Link href="/checklist/new-fiscal-year" className="ml-1 text-blue-600 hover:underline">
+            会計年度を作成
+          </Link>
+          してください。
+        </p>
+      </div>
+    )
+  }
+
+  const activeFiscalYear = fiscalYears.find((fy) => fy.status === 'active')
+  const selectedId = params.fiscal_year_id ?? activeFiscalYear?.id ?? fiscalYears[0].id
+  const selectedYear = fiscalYears.find((fy) => fy.id === selectedId) ?? fiscalYears[0]
+  const months = getFiscalYearMonths(
+    selectedYear.start_date,
+    selectedYear.end_date,
+    selectedYear.status === 'active',
+  )
 
   const { data: units } = await supabase
     .from('units')
@@ -50,7 +91,7 @@ export default async function PaymentsPage() {
 
   const unitIds = (units ?? []).map((u) => u.id)
 
-  const [{ data: records }, { data: profiles }, { data: charges }] = await Promise.all([
+  const [{ data: records }, { data: profiles }, { data: charges }, { count: unmatchedCount }] = await Promise.all([
     supabase
       .from('payment_records')
       .select('unit_id, year_month, status')
@@ -70,6 +111,11 @@ export default async function PaymentsPage() {
           .in('unit_id', unitIds)
           .is('effective_to', null)
       : Promise.resolve({ data: [] as { unit_id: string }[] }),
+    supabase
+      .from('bank_transactions')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .eq('status', 'unmatched'),
   ])
 
   const recordMap = new Map<string, PaymentStatus>()
@@ -80,18 +126,11 @@ export default async function PaymentsPage() {
   const profileUnitIds = new Set((profiles ?? []).map((p) => p.unit_id))
   const chargeUnitIds = new Set((charges ?? []).map((c) => c.unit_id))
 
-  const { count: unmatchedCount } = await supabase
-    .from('bank_transactions')
-    .select('id', { count: 'exact', head: true })
-    .eq('organization_id', orgId)
-    .eq('status', 'unmatched')
-
   return (
     <div className="px-6 py-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">入金管理</h1>
-          <p className="text-sm text-gray-500 mt-1">月別入金状況（直近6ヶ月）</p>
         </div>
         <div className="flex items-center gap-3">
           {(unmatchedCount ?? 0) > 0 && (
@@ -114,6 +153,18 @@ export default async function PaymentsPage() {
             </Link>
           )}
         </div>
+      </div>
+
+      <div className="flex items-center gap-3 mb-5">
+        <label className="text-sm font-medium text-gray-700">会計年度</label>
+        <FiscalYearSelect
+          fiscalYears={fiscalYears}
+          defaultValue={selectedYear.id}
+          basePath="/payments"
+        />
+        <span className="text-xs text-gray-400">
+          {months.length}ヶ月表示
+        </span>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-gray-200">
