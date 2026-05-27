@@ -5,13 +5,12 @@ import { publishAnnouncement, unpublishAnnouncement } from '@/app/actions/announ
 import type { Database } from '@/types/database'
 
 type MemberRole = Database['public']['Enums']['member_role']
-type Announcement = Database['public']['Tables']['announcements']['Row']
 
 function isAdmin(role: MemberRole) {
   return ['admin', 'vice_president', 'treasurer', 'board_member'].includes(role)
 }
 
-function isExpired(a: Announcement): boolean {
+function isExpired(a: { expires_at: string | null }): boolean {
   if (!a.expires_at) return false
   return new Date(a.expires_at) < new Date()
 }
@@ -37,7 +36,7 @@ export default async function AnnouncementsPage() {
 
   let query = supabase
     .from('announcements')
-    .select('*')
+    .select('id, title, visibility, published_at, expires_at')
     .eq('organization_id', orgId)
     .order('created_at', { ascending: false })
 

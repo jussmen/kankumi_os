@@ -65,12 +65,12 @@ export default async function ChecklistPage({ searchParams }: PageProps) {
     .order('scheduled_date', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: true })
 
-  const { data: templates } = await supabase
+  const { count: templateCount } = await supabase
     .from('checklist_templates')
-    .select('id')
+    .select('*', { count: 'exact', head: true })
 
   const hasItems = (checklist ?? []).length > 0
-  const hasTemplates = (templates ?? []).length > 0
+  const hasTemplates = (templateCount ?? 0) > 0
   const seeded = hasItems
 
   const pending = (checklist ?? []).filter((i) => i.status === 'pending').length

@@ -64,28 +64,32 @@ export default async function TopicDetailPage({ params, searchParams }: PageProp
 
   const { orgId, role } = { orgId: membership.organization_id, role: membership.role }
 
-  const { data: topic } = await supabase
-    .from('topics')
-    .select('*')
-    .eq('id', id)
-    .eq('organization_id', orgId)
-    .single()
+  const [
+    { data: topic },
+    { data: tasks },
+    { data: rawComments },
+  ] = await Promise.all([
+    supabase
+      .from('topics')
+      .select('*')
+      .eq('id', id)
+      .eq('organization_id', orgId)
+      .single(),
+    supabase
+      .from('tasks')
+      .select('id, title, status, due_date')
+      .eq('topic_id', id)
+      .eq('organization_id', orgId)
+      .order('created_at', { ascending: true }),
+    supabase
+      .from('comments')
+      .select('id, body, created_at, updated_at, author_id')
+      .eq('topic_id', id)
+      .eq('organization_id', orgId)
+      .order('created_at', { ascending: true }),
+  ])
 
   if (!topic) notFound()
-
-  const { data: tasks } = await supabase
-    .from('tasks')
-    .select('id, title, status, due_date')
-    .eq('topic_id', id)
-    .eq('organization_id', orgId)
-    .order('created_at', { ascending: true })
-
-  const { data: rawComments } = await supabase
-    .from('comments')
-    .select('id, body, created_at, updated_at, author_id')
-    .eq('topic_id', id)
-    .eq('organization_id', orgId)
-    .order('created_at', { ascending: true })
 
   const authorIds = [...new Set((rawComments ?? []).map((c) => c.author_id))]
   const { data: ownerProfiles } = authorIds.length
