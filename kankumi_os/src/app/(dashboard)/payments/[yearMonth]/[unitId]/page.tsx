@@ -46,10 +46,6 @@ export default async function UnitPaymentDetailPage({ params }: PageProps) {
   const { organization_id: orgId, role } = membership
   const canEdit = ['admin', 'vice_president', 'treasurer'].includes(role)
 
-  const firstDay = `${yearMonth}-01`
-  const [y, m] = yearMonth.split('-').map(Number)
-  const nextFirst = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, '0')}-01`
-
   const [
     { data: unit },
     { data: record },
@@ -79,8 +75,7 @@ export default async function UnitPaymentDetailPage({ params }: PageProps) {
       .select('charge_type_id, amount, effective_from, effective_to, is_not_applicable')
       .eq('unit_id', unitId)
       .eq('organization_id', orgId)
-      .lte('effective_from', firstDay)
-      .or(`effective_to.is.null,effective_to.gte.${firstDay}`),
+      .is('effective_to', null),
   ])
 
   if (!unit) notFound()
