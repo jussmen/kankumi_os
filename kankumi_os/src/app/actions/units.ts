@@ -203,6 +203,23 @@ export async function deleteUnit(id: string): Promise<string | null> {
   }
 
   const adminClient = createAdminClient()
+
+  // 照合済み bank_transactions を先に unmatched に戻す（FK制約の事前解除）
+  const { data: paymentRecords } = await adminClient
+    .from('payment_records')
+    .select('id')
+    .eq('unit_id', id)
+    .eq('organization_id', membership.organization_id)
+
+  if (paymentRecords && paymentRecords.length > 0) {
+    const ids = paymentRecords.map((r) => r.id)
+    await adminClient
+      .from('bank_transactions')
+      .update({ status: 'unmatched', matched_payment_id: null })
+      .in('matched_payment_id', ids)
+      .eq('organization_id', membership.organization_id)
+  }
+
   const { error } = await adminClient
     .from('units')
     .delete()
@@ -210,7 +227,7 @@ export async function deleteUnit(id: string): Promise<string | null> {
     .eq('organization_id', membership.organization_id)
 
   if (error) {
-    return '削除できません。入金記録など関連データが残っている可能性があります。'
+    return `削除に失敗しました: ${error.message}`
   }
 
   revalidatePath('/units')
