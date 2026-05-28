@@ -97,7 +97,10 @@ export default async function UnitPaymentDetailPage({ params }: PageProps) {
     other: 'その他',
   }
 
-  const activeCharges = (unitCharges ?? []).filter((c) => !c.is_not_applicable)
+  const activeChargeTypeIds = new Set((chargeTypes ?? []).map((ct) => ct.id))
+  const activeCharges = (unitCharges ?? []).filter(
+    (c) => !c.is_not_applicable && activeChargeTypeIds.has(c.charge_type_id)
+  )
   const expectedTotal = activeCharges.reduce((sum, c) => sum + Number(c.amount), 0)
   const paidAmount = record ? Number(record.paid_amount) : 0
   const diff = paidAmount - expectedTotal
