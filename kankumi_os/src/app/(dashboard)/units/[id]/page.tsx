@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { updateUnit, inviteResidentToUnit, moveOutResident } from '@/app/actions/units'
+import { updateUnit, inviteResidentToUnit, moveOutResident, deleteUnit } from '@/app/actions/units'
 import { adminSetPaymentProfile, clearAdminPaymentProfile } from '@/app/actions/payment-profiles'
 import { UnitForm } from '@/components/units/unit-form'
 import { UnitChargesForm } from '@/components/units/unit-charges-form'
@@ -9,6 +9,7 @@ import { UnitInviteForm } from '@/components/units/unit-invite-form'
 import { MoveOutButton } from '@/components/units/move-out-button'
 import { PaymentProfileForm } from '@/components/payment-profiles/payment-profile-form'
 import { ClearAdminProfileButton } from '@/components/payment-profiles/clear-admin-profile-button'
+import { DeleteUnitButton } from '@/components/units/delete-unit-button'
 const CHARGE_TYPE_LABELS: Record<string, string> = {
   management_fee: '管理費',
   reserve_fund: '修繕積立金',
@@ -290,6 +291,13 @@ export default async function UnitDetailPage({ params, searchParams }: PageProps
           </details>
         )}
       </section>
+      {/* 削除 */}
+      {canEdit && (
+        <section className="mt-8 pt-6 border-t border-gray-200">
+          <h2 className="text-sm font-semibold text-gray-500 mb-3">危険な操作</h2>
+          <DeleteUnitButton action={deleteUnit.bind(null, id)} />
+        </section>
+      )}
     </div>
   )
 }

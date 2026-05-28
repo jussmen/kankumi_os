@@ -173,6 +173,50 @@ export async function moveOutResident(
   return { error: null }
 }
 
+export async function deleteUnit(id: string): Promise<string | null> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: membership } = await supabase
+    .from('organization_members')
+    .select('organization_id, role')
+    .eq('user_id', user.id)
+    .eq('is_active', true)
+    .single()
+  if (!membership) redirect('/onboarding')
+  if (!['admin', 'vice_president', 'treasurer'].includes(membership.role)) {
+    return '権限がありません。'
+  }
+
+  const { count: activeResidents } = await supabase
+    .from('unit_owners')
+    .select('id', { count: 'exact', head: true })
+    .eq('unit_id', id)
+    .eq('organization_id', membership.organization_id)
+    .is('end_date', null)
+
+  if ((activeResidents ?? 0) > 0) {
+    return '住民が登録されている部屋は削除できません。先に住民を退去処理してください。'
+  }
+
+  const adminClient = createAdminClient()
+  const { error } = await adminClient
+    .from('units')
+    .delete()
+    .eq('id', id)
+    .eq('organization_id', membership.organization_id)
+
+  if (error) {
+    return '削除できません。入金記録など関連データが残っている可能性があります。'
+  }
+
+  revalidatePath('/units')
+  redirect('/units')
+}
+
 export async function inviteResidentToUnit(
   unitId: string,
   _prevState: string | null,
